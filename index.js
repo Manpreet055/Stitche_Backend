@@ -4,8 +4,9 @@ const express = require("express");
 const app = express();
 const port = process.env.PORT || 3000;
 
-const orders = require("./routes/orders");
-const users = require("./routes/users");
+const orders = require("./routes/ordersRoute");
+const users = require("./routes/usersRoute");
+const inbox = require("./routes/inboxRoute");
 
 app.use(express.json());
 app.use(
@@ -17,6 +18,7 @@ app.use(
 
 app.use("/users", users);
 app.use("/orders", orders);
+app.use("/inbox", inbox);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
