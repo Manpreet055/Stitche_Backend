@@ -9,10 +9,12 @@ const users = require("./routes/usersRoute");
 const inbox = require("./routes/inboxRoute");
 const products = require("./routes/productsRoute");
 
+const allowedOrigins = ["http://localhost:5173", "http://localhost:4173","http://localhost:5174" , "http://172.16.14.207:5173"];
+
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:4173"],
+    origin: allowedOrigins,
     credentials: true,
   })
 );

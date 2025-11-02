@@ -3,30 +3,20 @@ const { ObjectId } = require("mongodb");
 
 const handleGetOrders = async (req, res) => {
   try {
-    let { limit } = req.query;
     const Orders = await connectMongoDB("orders");
+    let { limit, page } = req.query;
+    limit = parseInt(limit) || 10;
+    page = parseInt(page) || 1;
+    const skip = (page - 1) * limit;
+    const length = await Orders.find().count();
+    const totalPages = Math.ceil(length / limit);
 
-    if (limit) {
-      limit = parseInt(limit);
-      if (!Number.isFinite(limit) || limit <= 0) limit = 10;
-      const MAX_LIMIT = 100;
-      if (limit > MAX_LIMIT) limit = MAX_LIMIT; // cap to avoid abuse
-
-      const data = await Orders.find()
-        .sort({ createdAt: -1, _id: -1 })
-        .limit(limit)
-        .toArray();
-      res.send({
-        status: 1,
-        msg: "Data fetched..",
-        orders: data,
-      });
-    }
-    const data = await Orders.find().sort({ createdAt: 1, _id: 1 }).toArray();
+    const data = await Orders.find().sort({ createdAt: 1, _id: 1 }).skip(skip).limit(limit).toArray();
     res.send({
       status: 1,
       msg: "Data fetched..",
       orders: data,
+      totalPages:totalPages
     });
   } catch (err) {
     res.status(500).send({
