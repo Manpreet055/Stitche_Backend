@@ -1,8 +1,12 @@
-const express =  require("express");
-const {handleGetAllOrders} = require("../controllers/ordersControllers")
+const express = require("express");
+const {
+  handleGetOrders,
+  handleFindOrderById,
+} = require("../controllers/ordersControllers");
 
-const router = express.Router()
+const router = express.Router();
 
-router.get("/",handleGetAllOrders)
+router.get("/", handleGetOrders);
+router.get("/:id", handleFindOrderById);
 
-module.exports = router 
+module.exports = router;

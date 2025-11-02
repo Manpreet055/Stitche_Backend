@@ -1,16 +1,16 @@
-const { ObjectId } = require("mongodb");
 const {connectMongoDB} = require("../config/connectMongoDB")
+const { ObjectId } = require("mongodb");
 
-const handleGetAllMessages =async (req,res)=>{
+const handleGetAllProducts =async (req,res)=>{
   try{
-    const Inbox = await connectMongoDB("inbox");
+    const Products = await connectMongoDB("products");
     
-    const allMessages = await Inbox.find().toArray();
+    const allProducts = await Products.find().toArray();
     
     res.status(200).json({
       status:1,
       msg:"Data fetched successfully ",
-      messages:allMessages
+      products:allProducts
     })
   } catch (error){
     res.status(500).json({
@@ -22,29 +22,29 @@ const handleGetAllMessages =async (req,res)=>{
 }
 
 
-const findChatById = async (req,res)=>{
+const handleFindProductById= async (req,res)=>{
   try{
     const {id} = req.params;
     if(!ObjectId.isValid(id)){
       res.status(400).json({
         status:0,
-        msg:"Chat Id is not valid"
+        msg:"Product Id is not valid"
       })
     }
     
-    const Inbox = await connectMongoDB("inbox")
-    const foundChat = await Inbox.findOne({_id:new ObjectId(id)})
+    const Products = await connectMongoDB("products")
+    const foundProduct= await Products.findOne({_id:new ObjectId(id)})
     
-    if(!foundChat){
+    if(!foundProduct){
       res.status(404).json({
         status:0,
-        msg:"Chat not found"
+        msg:"Product not found"
       })
     }
     res.status(200).json({
       status:1,
       msg:"Data fetching Successful",
-      chat: foundChat
+      product: foundProduct
     })
   } catch (error){
     res.status(500).json({
@@ -53,4 +53,4 @@ const findChatById = async (req,res)=>{
     })
   }
 }
-module.exports = {handleGetAllMessages,findChatById}
+module.exports = {handleGetAllProducts,handleFindProductById}
