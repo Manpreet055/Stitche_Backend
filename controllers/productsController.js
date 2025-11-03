@@ -16,8 +16,8 @@ const handleGetAllProducts = async (req, res) => {
     res.status(200).json({
       status: 1,
       msg: "Data fetched successfully ",
-      products: allProducts,
       totalPages: totalPages,
+      products: allProducts,
     });
   } catch (error) {
     res.status(500).json({
@@ -54,8 +54,55 @@ const handleFindProductById = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       status: 0,
-      msg: `Server Error :${error.message}`,
+      msg: `Something went wrong:${error.message}`,
     });
   }
 };
-module.exports = { handleGetAllProducts, handleFindProductById };
+
+
+const handleSearchProducts = async (req, res) => {
+  try {
+    const Products = await connectMongoDB("products");
+    const { query,limit } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Search query is required",
+      });
+    }
+    
+    const searchResults = await Products.aggregate([
+      {
+        $search: {
+          index: "products",
+          text: {
+            query:query,
+            path: [
+              "name",
+              "title",
+              "category",
+              "brand",
+              "subCategory",
+            ],
+            fuzzy: { maxEdits: 2 },
+          },
+        },
+      },
+      { $limit: limit || 10 },
+    ]).toArray();
+    
+    res.status(200).json({
+      status: 1,
+      msg: "Data fetched successfully",
+      products: searchResults,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: `Server Error: ${error.message}`,
+    });
+  }
+};
+
+module.exports = { handleGetAllProducts, handleFindProductById, handleSearchProducts};

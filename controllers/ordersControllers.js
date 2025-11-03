@@ -11,12 +11,16 @@ const handleGetOrders = async (req, res) => {
     const length = await Orders.find().count();
     const totalPages = Math.ceil(length / limit);
 
-    const data = await Orders.find().sort({ createdAt: 1, _id: 1 }).skip(skip).limit(limit).toArray();
+    const data = await Orders.find()
+      .sort({ createdAt: 1, _id: 1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
     res.send({
       status: 1,
       msg: "Data fetched..",
+      totalPages: totalPages,
       orders: data,
-      totalPages:totalPages
     });
   } catch (err) {
     res.status(500).send({
@@ -58,7 +62,58 @@ const handleFindOrderById = async (req, res) => {
   }
 };
 
+const handleSearchOrders = async (req, res) => {
+  try {
+    const Orders = await connectMongoDB("orders");
+    const { query,limit } = req.query;
+
+    if (!query) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Search query is required",
+      });
+    }
+
+    const searchResults = await Orders.aggregate([
+      {
+        $search: {
+          index: "orders",
+          text: {
+            query: query,
+            path: [
+              "orderId",
+              "user.username",
+              "user.email",
+              "user.firstName",
+              "user.lastName",
+              "user.phone",
+              "shipping.address",
+              "shipping.city",
+              "shipping.country",
+              "shipping.postalCode",
+            ],
+            fuzzy: { maxEdits: 2 },
+          },
+        },
+      },
+      { $limit: limit || 10 },
+    ]).toArray();
+
+    res.status(200).json({
+      status: 1,
+      msg: "Data fetched successfully",
+      orders: searchResults,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: `Server Error: ${error.message}`,
+    });
+  }
+};
+
 module.exports = {
   handleGetOrders,
   handleFindOrderById,
+  handleSearchOrders
 };
