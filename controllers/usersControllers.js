@@ -10,7 +10,7 @@ const getUsers = async (req, res) => {
     const length = await Users.find().count();
     const totalPages = Math.ceil(length / limit);
 
-    const data = await Users.find().sort({dateJoined:1}).skip(skip).limit(limit).toArray();
+    const data = await Users.find({},{projetion:{Username :1 , role : 1 , email : 1, status : 1 , orders : 1 , lastLogin : 1 }}).sort({dateJoined:1}).skip(skip).limit(limit).toArray();
 
     res.send({
       status: 1,
@@ -26,51 +26,6 @@ const getUsers = async (req, res) => {
   }
 };
 
-const handleSearchUsers = async (req, res) => {
-  try {
-    const Users = await connectMongoDB("users");
-    const { query,limit } = req.query;
-    
-    if (!query) {
-      return res.status(400).json({
-        status: 0,
-        msg: "Search query is required",
-      });
-    }
-    
-    const searchResults = await Users.aggregate([
-      {
-        $search: {
-          index: "users",
-          text: {
-            query:query,
-            path: [
-              "Username",
-              "email",
-              "phone",
-              "status",
-              "role",
-              "address.city",
-              "address.country"
-            ],
-            fuzzy: { maxEdits: 2 },
-          },
-        },
-      },
-      { $limit: limit || 10 },
-    ]).toArray();
-    
-    res.status(200).json({
-      status: 1,
-      msg: "Data fetched successfully",
-      users: searchResults,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: `Server Error: ${error.message}`,
-    });
-  }
-};
 
-module.exports = { getUsers, handleSearchUsers };
+
+module.exports = { getUsers };

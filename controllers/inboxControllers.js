@@ -11,7 +11,10 @@ const handleGetAllMessages = async (req, res) => {
     const length = await Inbox.find().count();
     const totalPages = Math.ceil(length / limit);
 
-    const allMessages = await Inbox.find()
+    const allMessages = await Inbox.find(
+      {},
+      { projection: { _id: 1, user: 1, messages: 1, subject: 1 } }
+    )
       .sort({ conversationId: 1, _id: 1 })
       .skip(skip)
       .limit(limit)
@@ -63,49 +66,4 @@ const findChatById = async (req, res) => {
   }
 };
 
-const handleSearchInbox = async (req, res) => {
-  try {
-    const Inbox = await connectMongoDB("inbox");
-    const { query, limit } = req.query;
-
-    if (!query) {
-      return res.status(400).json({
-        status: 0,
-        msg: "Search query is required",
-      });
-    }
-
-    const searchResults = await Inbox.aggregate([
-      {
-        $search: {
-          index: "inbox",
-          text: {
-            query: query,
-            path: [
-              "conversationId",
-              "user.email",
-              "user.name",
-              "user.id",
-              "role",
-              "subject",
-            ],
-            fuzzy: { maxEdits: 2 },
-          },
-        },
-      },
-      { $limit: limit || 10 },
-    ]).toArray();
-
-    res.status(200).json({
-      status: 1,
-      msg: "Data fetched successfully",
-      inbox: searchResults,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: `Server Error: ${error.message}`,
-    });
-  }
-};
-module.exports = { handleGetAllMessages, findChatById,handleSearchInbox };
+module.exports = { handleGetAllMessages, findChatById };
