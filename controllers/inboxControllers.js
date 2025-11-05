@@ -13,7 +13,7 @@ const handleGetAllMessages = async (req, res) => {
 
     const allMessages = await Inbox.find(
       {},
-      { projection: { _id: 1, user: 1, messages: 1, subject: 1 } }
+      { projection: { _id: 1, user: 1, messages: 1, subject: 1 } },
     )
       .sort({ conversationId: 1, _id: 1 })
       .skip(skip)

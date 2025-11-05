@@ -23,7 +23,7 @@ const handleGetAllProducts = async (req, res) => {
           category: 1,
           rating: 1,
         },
-      }
+      },
     )
       .sort({ _id: 1 })
       .skip(skip)
@@ -76,7 +76,38 @@ const handleFindProductById = async (req, res) => {
   }
 };
 
+const handleToggleFeatured = async (req, res) => {
+  try {
+    const { isFeatured, _id } = req.body;
+    if (!_id || typeof isFeatured === "undefined") {
+      return res.status(400).json({
+        status: 0,
+        msg: "Please provide all details to updated the featured status ",
+      });
+    }
+    const Products = await connectMongoDB("products");
+    const updateFeaturedStatus = await Products.updateOne(
+      { _id: new ObjectId(_id) },
+      {
+        $set: {
+          isFeatured: isFeatured,
+        },
+      },
+    );
+    res.status(200).json({
+      status: 1,
+      msg: "Product Featured status updated sucessfully..",
+      updateFeaturedStatus,
+    });
+  } catch (err) {
+    res.status(500).send({
+      status: 0,
+      msg: `Server Error : ${err.message}`,
+    });
+  }
+};
 module.exports = {
   handleGetAllProducts,
   handleFindProductById,
+  handleToggleFeatured,
 };

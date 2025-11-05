@@ -11,12 +11,11 @@ const connectMongoDB = async (collectionName) => {
     if (!cachedDb) {
       await client.connect();
       console.log("MongoDB Connection Established...");
-      cachedDb =  client.db("Shop");
+      cachedDb = client.db("Shop");
     }
 
     const collection = cachedDb.collection(collectionName);
     return collection;
-
   } catch (error) {
     console.error("MongoDB Connection Failed:", error.message);
     throw error;

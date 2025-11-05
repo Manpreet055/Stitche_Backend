@@ -57,7 +57,7 @@ const handleSearch = async (req, res) => {
           ])
           .toArray();
         return { [config.collection]: result };
-      })
+      }),
     );
 
     const merged = Object.assign({}, ...searchResults);

@@ -10,7 +10,23 @@ const getUsers = async (req, res) => {
     const length = await Users.find().count();
     const totalPages = Math.ceil(length / limit);
 
-    const data = await Users.find({},{projetion:{Username :1 , role : 1 , email : 1, status : 1 , orders : 1 , lastLogin : 1 }}).sort({dateJoined:1}).skip(skip).limit(limit).toArray();
+    const data = await Users.find(
+      {},
+      {
+        projetion: {
+          Username: 1,
+          role: 1,
+          email: 1,
+          status: 1,
+          orders: 1,
+          lastLogin: 1,
+        },
+      },
+    )
+      .sort({ dateJoined: 1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
 
     res.send({
       status: 1,
@@ -25,7 +41,5 @@ const getUsers = async (req, res) => {
     });
   }
 };
-
-
 
 module.exports = { getUsers };

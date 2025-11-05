@@ -11,7 +11,20 @@ const handleGetOrders = async (req, res) => {
     const length = await Orders.find().count();
     const totalPages = Math.ceil(length / limit);
 
-    const data = await Orders.find({},{projection:{_id:1, products:1, totalAmount:1, payment:1, shipping:1, status:1, user:1 }})
+    const data = await Orders.find(
+      {},
+      {
+        projection: {
+          _id: 1,
+          products: 1,
+          totalAmount: 1,
+          payment: 1,
+          shipping: 1,
+          status: 1,
+          user: 1,
+        },
+      },
+    )
       .sort({ createdAt: 1, _id: 1 })
       .skip(skip)
       .limit(limit)
@@ -61,8 +74,6 @@ const handleFindOrderById = async (req, res) => {
     });
   }
 };
-
-
 
 module.exports = {
   handleGetOrders,
