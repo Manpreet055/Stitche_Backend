@@ -106,8 +106,44 @@ const handleToggleFeatured = async (req, res) => {
     });
   }
 };
+const handleEditProduct = async (req, res) => {
+  try {
+    const { _id, ...updates } = req.body;
+    if (!_id || Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        status: 0,
+        msg: "please provide product id and updates",
+      });
+    }
+    const Products = await connectMongoDB("products");
+
+    const updateProduct = await Products.updateOne(
+      { _id: new Object(_id) },
+      { $set: updates },
+    );
+
+    if (updateProduct.matcherCount === 0) {
+      return res.status(404).json({
+        status: 0,
+        msg: "Didn't find any product.",
+      });
+    }
+    res.status(200).json({
+      status: 1,
+      msg: "Products Details updated sucessfully..",
+      updateProduct: updateProduct,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: `Server Error :${error.message}`,
+    });
+  }
+};
+
 module.exports = {
   handleGetAllProducts,
   handleFindProductById,
   handleToggleFeatured,
+  handleEditProduct,
 };
