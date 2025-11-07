@@ -23,7 +23,7 @@ const handleGetAllProducts = async (req, res) => {
           category: 1,
           rating: 1,
         },
-      },
+      }
     )
       .sort({ _id: 1 })
       .skip(skip)
@@ -92,7 +92,7 @@ const handleToggleFeatured = async (req, res) => {
         $set: {
           isFeatured: isFeatured,
         },
-      },
+      }
     );
     res.status(200).json({
       status: 1,
@@ -118,11 +118,11 @@ const handleEditProduct = async (req, res) => {
     const Products = await connectMongoDB("products");
 
     const updateProduct = await Products.updateOne(
-      { _id: new Object(_id) },
-      { $set: updates },
+      { _id: new ObjectId(_id) },
+      { $set: updates }
     );
 
-    if (updateProduct.matcherCount === 0) {
+    if (updateProduct.matchedCount === 0) {
       return res.status(404).json({
         status: 0,
         msg: "Didn't find any product.",
