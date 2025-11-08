@@ -66,4 +66,44 @@ const findChatById = async (req, res) => {
   }
 };
 
-module.exports = { handleGetAllMessages, findChatById };
+const filterInbox = async (req, res) => {
+  try {
+    const filters = { ...req.body };
+
+    if (Object.keys(filters).length === 0) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Please provide filters",
+      });
+    }
+
+    for (const key in filters) {
+      if (filters[key] === "true") filters[key] = true;
+      else if (filters[key] === "false") filters[key] = false;
+      else if (!isNaN(filters[key])) filters[key] = Number(filters[key]);
+    }
+
+    const Inbox = await connectMongoDB("inbox");
+    const filteredInbox = await Inbox.find(filters).toArray();
+
+    if (filteredInbox.length === 0) {
+      return res.status(404).json({
+        status: 0,
+        msg: "No messages found",
+      });
+    }
+
+    res.status(200).json({
+      status: 1,
+      msg: "Inbox filtration successful.",
+      messages: filteredInbox,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: `Server Error: ${error.message}`,
+    });
+  }
+};
+
+module.exports = { handleGetAllMessages, findChatById, filterInbox };

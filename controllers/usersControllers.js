@@ -42,4 +42,38 @@ const getUsers = async (req, res) => {
   }
 };
 
-module.exports = { getUsers };
+const filterUsers = async (req, res) => {
+  try {
+    const filters = { ...req.body };
+
+    if (Object.keys(filters).length === 0) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Please provide filters",
+      });
+    }
+
+    const Users = await connectMongoDB("users");
+    const filteredUsers = await Users.find(filters).toArray();
+
+    if (filteredUsers.length === 0) {
+      return res.status(404).json({
+        status: 0,
+        msg: "No Users found",
+      });
+    }
+
+    res.status(200).json({
+      status: 1,
+      msg: "Users filtration successful.",
+      users: filteredUsers,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: `Server Error: ${error.message}`,
+    });
+  }
+};
+
+module.exports = { getUsers, filterUsers };

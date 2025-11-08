@@ -75,7 +75,42 @@ const handleFindOrderById = async (req, res) => {
   }
 };
 
+const filterOrders = async (req, res) => {
+  try {
+    const filters = { ...req.body };
+
+    if (Object.keys(filters).length === 0) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Please provide filters",
+      });
+    }
+
+    const Orders = await connectMongoDB("orders");
+    const filteredOrders = await Orders.find(filters).toArray();
+
+    if (filteredOrders.length === 0) {
+      return res.status(404).json({
+        status: 0,
+        msg: "No Orders found",
+      });
+    }
+
+    res.status(200).json({
+      status: 1,
+      msg: "Orders filtration successful.",
+      orders: filteredOrders,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: `Server Error: ${error.message}`,
+    });
+  }
+};
+
 module.exports = {
   handleGetOrders,
   handleFindOrderById,
+  filterOrders,
 };
