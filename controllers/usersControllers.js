@@ -1,4 +1,5 @@
 const { connectMongoDB } = require("../config/connectMongoDB");
+const { ObjectId } = require("mongodb");
 
 const getUsers = async (req, res) => {
   try {
@@ -7,7 +8,7 @@ const getUsers = async (req, res) => {
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
     const skip = (page - 1) * limit;
-    const length = await Users.find().count();
+    const length = await Users.countDocuments();
     const totalPages = Math.ceil(length / limit);
 
     const data = await Users.find(
@@ -42,15 +43,52 @@ const getUsers = async (req, res) => {
   }
 };
 
+const handleFindUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!ObjectId.isValid(id)) {
+      res.status(400).json({
+        status: 0,
+        msg: "User Id is not valid",
+      });
+    }
+
+    const Users = await connectMongoDB("users");
+    const foundUser = await Users.findOne({ _id: new ObjectId(id) });
+
+    if (!foundUser) {
+      res.status(404).json({
+        status: 0,
+        msg: "User not found",
+      });
+    }
+    res.status(200).json({
+      status: 1,
+      msg: "Data fetching Successful",
+      user: foundUser,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: `Something went wrong:${error.message}`,
+    });
+  }
+};
+
 const filterUsers = async (req, res) => {
   try {
-    const filters = { ...req.body };
+    const { ...filters } = req.query;
 
     if (Object.keys(filters).length === 0) {
       return res.status(400).json({
         status: 0,
         msg: "Please provide filters",
       });
+    }
+    for (const key in filters) {
+      if (filters[key] === "true") filters[key] = true;
+      else if (filters[key] === "false") filters[key] = false;
+      else if (!isNaN(filters[key])) filters[key] = Number(filters[key]);
     }
 
     const Users = await connectMongoDB("users");
@@ -66,6 +104,7 @@ const filterUsers = async (req, res) => {
     res.status(200).json({
       status: 1,
       msg: "Users filtration successful.",
+      foundUsers: filteredUsers.length,
       users: filteredUsers,
     });
   } catch (error) {
@@ -76,4 +115,4 @@ const filterUsers = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, filterUsers };
+module.exports = { getUsers, filterUsers, handleFindUserById };

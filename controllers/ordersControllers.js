@@ -8,7 +8,7 @@ const handleGetOrders = async (req, res) => {
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
     const skip = (page - 1) * limit;
-    const length = await Orders.find().count();
+    const length = await Orders.countDocuments();
     const totalPages = Math.ceil(length / limit);
 
     const data = await Orders.find(
@@ -77,7 +77,7 @@ const handleFindOrderById = async (req, res) => {
 
 const filterOrders = async (req, res) => {
   try {
-    const filters = { ...req.body };
+    const { ...filters } = req.query;
 
     if (Object.keys(filters).length === 0) {
       return res.status(400).json({
@@ -99,6 +99,7 @@ const filterOrders = async (req, res) => {
     res.status(200).json({
       status: 1,
       msg: "Orders filtration successful.",
+      foundOrders: filteredOrders.length,
       orders: filteredOrders,
     });
   } catch (error) {

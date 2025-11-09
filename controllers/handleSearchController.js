@@ -13,17 +13,26 @@ const handleSearch = async (req, res) => {
     const searchConfig = [
       {
         collection: "products",
-        index: "products",
+        index: "products_search_index",
         path: ["name", "title", "category", "brand", "subCategory"],
       },
       {
         collection: "users",
-        index: "users",
-        path: ["Username", "email", "phone", "address.city", "address.country"],
+        index: "users_search_index",
+        path: [
+          "username",
+          "email",
+          "role",
+          "profile.fullName",
+          "profile.phone",
+          "profile.address.city",
+          "profile.address.country",
+          "profile.address.street",
+        ],
       },
       {
         collection: "orders",
-        index: "orders",
+        index: "orders_search_index",
         path: [
           "orderId",
           "user.username",
@@ -54,6 +63,7 @@ const handleSearch = async (req, res) => {
                 },
               },
             },
+            { $limit: 15 },
           ])
           .toArray();
         return { [config.collection]: result };

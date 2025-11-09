@@ -8,6 +8,6 @@ const {
 const router = express.Router();
 
 router.get("/", handleGetAllMessages);
-router.get("/:id", findChatById);
 router.get("/filter", filterInbox);
+router.get("/:id", findChatById);
 module.exports = router;

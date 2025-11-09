@@ -8,7 +8,7 @@ const {
 const router = express.Router();
 
 router.get("/", handleGetOrders);
-router.get("/:id", handleFindOrderById);
 router.get("/filter", filterOrders);
+router.get("/:id", handleFindOrderById);
 
 module.exports = router;

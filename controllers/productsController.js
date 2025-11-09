@@ -8,7 +8,7 @@ const handleGetAllProducts = async (req, res) => {
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
     const skip = (page - 1) * limit;
-    const length = await Products.find().count();
+    const length = await Products.countDocuments();
     const totalPages = Math.ceil(length / limit);
 
     const allProducts = await Products.find(
@@ -115,6 +115,11 @@ const handleEditProduct = async (req, res) => {
         msg: "please provide product id and updates",
       });
     }
+    for (const key in updates) {
+      if (updates[key] === "true") updates[key] = true;
+      else if (updates[key] === "false") updates[key] = false;
+      else if (!isNaN(updates[key])) updates[key] = Number(updates[key]);
+    }
     const Products = await connectMongoDB("products");
 
     const updateProduct = await Products.updateOne(
@@ -143,7 +148,7 @@ const handleEditProduct = async (req, res) => {
 
 const filterProducts = async (req, res) => {
   try {
-    const filters = { ...req.body };
+    const { ...filters } = req.query;
 
     if (Object.keys(filters).length === 0) {
       return res.status(400).json({
@@ -164,6 +169,7 @@ const filterProducts = async (req, res) => {
     res.status(200).json({
       status: 1,
       msg: "Products filtration successful.",
+      foundProducts: filteredProducts.length,
       products: filteredProducts,
     });
   } catch (error) {

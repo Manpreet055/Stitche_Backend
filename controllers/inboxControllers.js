@@ -8,7 +8,7 @@ const handleGetAllMessages = async (req, res) => {
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
     const skip = (page - 1) * limit;
-    const length = await Inbox.find().count();
+    const length = await Inbox.countDocuments();
     const totalPages = Math.ceil(length / limit);
 
     const allMessages = await Inbox.find(
@@ -68,7 +68,7 @@ const findChatById = async (req, res) => {
 
 const filterInbox = async (req, res) => {
   try {
-    const filters = { ...req.body };
+    const { ...filters } = req.query;
 
     if (Object.keys(filters).length === 0) {
       return res.status(400).json({
@@ -96,6 +96,7 @@ const filterInbox = async (req, res) => {
     res.status(200).json({
       status: 1,
       msg: "Inbox filtration successful.",
+      foundMessages: filteredInbox.length,
       messages: filteredInbox,
     });
   } catch (error) {
