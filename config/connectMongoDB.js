@@ -1,25 +1,14 @@
-const { MongoClient } = require("mongodb");
+const { mongoose } = require("mongoose");
 require("dotenv").config();
 
-const uri = process.env.URI;
-const client = new MongoClient(uri);
-
-let cachedDb = null; // cache the db connection
-
-const connectMongoDB = async (collectionName) => {
-  try {
-    if (!cachedDb) {
-      await client.connect();
-      console.log("MongoDB Connection Established...");
-      cachedDb = client.db("Shop");
-    }
-
-    const collection = cachedDb.collection(collectionName);
-    return collection;
-  } catch (error) {
-    console.error("MongoDB Connection Failed:", error.message);
-    throw error;
-  }
+const connectMongoDB = () => {
+  mongoose
+    .connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(() => console.log("MongoDB Connection Established.."))
+    .catch((err) => console.log("MongoDB Connection Failed..", err.message));
 };
 
-module.exports = { connectMongoDB };
+module.exports = connectMongoDB;

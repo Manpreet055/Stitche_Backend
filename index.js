@@ -3,10 +3,13 @@ const cors = require("cors");
 const express = require("express");
 const app = express();
 const helmet = require("helmet");
+const connectMongoDB = require("./config/connectMongoDB");
 const handleSearch = require("./controllers/handleSearchController");
 const handleGetstats = require("./controllers/statsController");
 const apiLimiter = require("./middlewares/rateLimit");
 const port = process.env.PORT || 3000;
+
+connectMongoDB();
 
 const orders = require("./routes/ordersRoute");
 const users = require("./routes/usersRoute");
