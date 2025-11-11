@@ -19,7 +19,7 @@ const addressSchema = new mongoose.Schema(
       default: "0000",
     },
   },
-  { _id: false }
+  { _id: false },
 );
 const profileSchema = new mongoose.Schema(
   {
@@ -41,7 +41,7 @@ const profileSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const userSchema = new mongoose.Schema(
@@ -79,7 +79,7 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const User = mongoose.model("User", userSchema);
