@@ -1,4 +1,6 @@
-const { connectMongoDB } = require("../config/connectMongoDB");
+const Product = require("../../models/productSchema");
+const User = require("../../models/userSchema");
+const Order = require("../../models/orderSchema");
 
 const handleSearch = async (req, res) => {
   try {
@@ -12,12 +14,12 @@ const handleSearch = async (req, res) => {
 
     const searchConfig = [
       {
-        collection: "products",
+        model: Product,
         index: "products_search_index",
         path: ["name", "title", "category", "brand", "subCategory"],
       },
       {
-        collection: "users",
+        model: User,
         index: "users_search_index",
         path: [
           "username",
@@ -31,7 +33,7 @@ const handleSearch = async (req, res) => {
         ],
       },
       {
-        collection: "orders",
+        model: Order,
         index: "orders_search_index",
         path: [
           "orderId",
@@ -50,22 +52,19 @@ const handleSearch = async (req, res) => {
 
     const searchResults = await Promise.all(
       searchConfig.map(async (config) => {
-        const collection = await connectMongoDB(config.collection);
-        const result = await collection
-          .aggregate([
-            {
-              $search: {
-                index: config.index,
-                text: {
-                  query: query,
-                  path: config.path,
-                  fuzzy: { maxEdits: 2 },
-                },
+        const result = await config.model.aggregate([
+          {
+            $search: {
+              index: config.index,
+              text: {
+                query: query,
+                path: config.path,
+                fuzzy: { maxEdits: 2 },
               },
             },
-            { $limit: 15 },
-          ])
-          .toArray();
+          },
+          { $limit: 15 },
+        ]);
         return { [config.collection]: result };
       }),
     );

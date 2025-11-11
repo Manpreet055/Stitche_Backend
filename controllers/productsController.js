@@ -1,34 +1,19 @@
-const { connectMongoDB } = require("../config/connectMongoDB");
-const { ObjectId } = require("mongodb");
+const Product = require("../models/productSchema");
 
 const handleGetAllProducts = async (req, res) => {
   try {
-    const Products = await connectMongoDB("products");
     let { limit, page } = req.query;
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
     const skip = (page - 1) * limit;
-    const length = await Products.countDocuments();
+    const length = await Product.countDocuments();
     const totalPages = Math.ceil(length / limit);
 
-    const allProducts = await Products.find(
-      {},
-      {
-        projection: {
-          _id: 1,
-          title: 1,
-          brand: 1,
-          price: 1,
-          stock: 1,
-          category: 1,
-          rating: 1,
-        },
-      },
-    )
+    const allProducts = await Product.find({})
       .sort({ _id: 1 })
       .skip(skip)
       .limit(limit)
-      .toArray();
+      .lean();
 
     res.status(200).json({
       status: 1,
@@ -47,15 +32,8 @@ const handleGetAllProducts = async (req, res) => {
 const handleFindProductById = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!ObjectId.isValid(id)) {
-      res.status(400).json({
-        status: 0,
-        msg: "Product Id is not valid",
-      });
-    }
 
-    const Products = await connectMongoDB("products");
-    const foundProduct = await Products.findOne({ _id: new ObjectId(id) });
+    const foundProduct = await Product.findById(id).lean();
 
     if (!foundProduct) {
       res.status(404).json({
@@ -78,16 +56,15 @@ const handleFindProductById = async (req, res) => {
 
 const handleToggleFeatured = async (req, res) => {
   try {
-    const { isFeatured, _id } = req.body;
-    if (!_id || typeof isFeatured === "undefined") {
+    const { isFeatured, id } = req.body;
+    if (!id || typeof isFeatured === "undefined") {
       return res.status(400).json({
         status: 0,
         msg: "Please provide all details to updated the featured status ",
       });
     }
-    const Products = await connectMongoDB("products");
-    const updateFeaturedStatus = await Products.updateOne(
-      { _id: new ObjectId(_id) },
+    const updateFeaturedStatus = await Product.findByIdAndUpdate(
+      { id },
       {
         $set: {
           isFeatured: isFeatured,
@@ -108,8 +85,8 @@ const handleToggleFeatured = async (req, res) => {
 };
 const handleEditProduct = async (req, res) => {
   try {
-    const { _id, ...updates } = req.body;
-    if (!_id || Object.keys(updates).length === 0) {
+    const { id, ...updates } = req.body;
+    if (!id || Object.keys(updates).length === 0) {
       return res.status(400).json({
         status: 0,
         msg: "please provide product id and updates",
@@ -120,10 +97,9 @@ const handleEditProduct = async (req, res) => {
       else if (updates[key] === "false") updates[key] = false;
       else if (!isNaN(updates[key])) updates[key] = Number(updates[key]);
     }
-    const Products = await connectMongoDB("products");
 
-    const updateProduct = await Products.updateOne(
-      { _id: new ObjectId(_id) },
+    const updateProduct = await Product.findByIdAndUpdate(
+      { id },
       { $set: updates },
     );
 
@@ -146,44 +122,9 @@ const handleEditProduct = async (req, res) => {
   }
 };
 
-const filterProducts = async (req, res) => {
-  try {
-    const { ...filters } = req.query;
-
-    if (Object.keys(filters).length === 0) {
-      return res.status(400).json({
-        status: 0,
-        msg: "Please provide filters",
-      });
-    }
-    const Products = await connectMongoDB("products");
-    const filteredProducts = await Products.find(filters).toArray();
-
-    if (filteredProducts.length === 0) {
-      return res.status(404).json({
-        status: 0,
-        msg: "No products found",
-      });
-    }
-
-    res.status(200).json({
-      status: 1,
-      msg: "Products filtration successful.",
-      foundProducts: filteredProducts.length,
-      products: filteredProducts,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: `Server Error: ${error.message}`,
-    });
-  }
-};
-
 module.exports = {
   handleGetAllProducts,
   handleFindProductById,
   handleToggleFeatured,
   handleEditProduct,
-  filterProducts,
 };

@@ -1,7 +1,7 @@
 const User = require("../models/UserSchema");
-const Product = require("../models/productSchema");
+const Product = require("../../models/productSchema");
 const Inbox = require("../models/inboxSchema");
-const Order = require("../models/orderSchema");
+const Order = require("../../models/orderSchema");
 
 const deleteDataById = async (req, res) => {
   try {

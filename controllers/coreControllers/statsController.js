@@ -1,4 +1,4 @@
-const { connectMongoDB } = require("../config/connectMongoDB");
+const { connectMongoDB } = require("../../config/connectMongoDB");
 
 const handleGetstats = async (req, res) => {
   try {

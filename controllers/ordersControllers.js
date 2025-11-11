@@ -1,34 +1,21 @@
-const { connectMongoDB } = require("../config/connectMongoDB");
 const { ObjectId } = require("mongodb");
+const Order = require("../models/orderSchema");
 
 const handleGetOrders = async (req, res) => {
   try {
-    const Orders = await connectMongoDB("orders");
     let { limit, page } = req.query;
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
     const skip = (page - 1) * limit;
-    const length = await Orders.countDocuments();
+    const length = await Order.countDocuments();
     const totalPages = Math.ceil(length / limit);
 
-    const data = await Orders.find(
-      {},
-      {
-        projection: {
-          _id: 1,
-          products: 1,
-          totalAmount: 1,
-          payment: 1,
-          shipping: 1,
-          status: 1,
-          user: 1,
-        },
-      },
-    )
+    const data = await Order.find()
       .sort({ createdAt: 1, _id: 1 })
       .skip(skip)
       .limit(limit)
-      .toArray();
+      .lean();
+
     res.send({
       status: 1,
       msg: "Data fetched..",
@@ -53,8 +40,7 @@ const handleFindOrderById = async (req, res) => {
       });
     }
 
-    const Orders = await connectMongoDB("orders");
-    const foundOrder = await Orders.findOne({ _id: new ObjectId(id) });
+    const foundOrder = await Order.findById(id);
 
     if (!foundOrder) {
       res.status(404).json({
@@ -75,43 +61,7 @@ const handleFindOrderById = async (req, res) => {
   }
 };
 
-const filterOrders = async (req, res) => {
-  try {
-    const { ...filters } = req.query;
-
-    if (Object.keys(filters).length === 0) {
-      return res.status(400).json({
-        status: 0,
-        msg: "Please provide filters",
-      });
-    }
-
-    const Orders = await connectMongoDB("orders");
-    const filteredOrders = await Orders.find(filters).toArray();
-
-    if (filteredOrders.length === 0) {
-      return res.status(404).json({
-        status: 0,
-        msg: "No Orders found",
-      });
-    }
-
-    res.status(200).json({
-      status: 1,
-      msg: "Orders filtration successful.",
-      foundOrders: filteredOrders.length,
-      orders: filteredOrders,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: `Server Error: ${error.message}`,
-    });
-  }
-};
-
 module.exports = {
   handleGetOrders,
   handleFindOrderById,
-  filterOrders,
 };

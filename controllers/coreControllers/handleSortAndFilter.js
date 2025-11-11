@@ -1,7 +1,7 @@
 const User = require("../models/UserSchema");
-const Product = require("../models/productSchema");
+const Product = require("../../models/productSchema");
 const Inbox = require("../models/inboxSchema");
-const Order = require("../models/orderSchema");
+const Order = require("../../models/orderSchema");
 
 const sortData = async (req, res) => {
   try {
@@ -61,6 +61,12 @@ const filterData = async (req, res) => {
       return res
         .status(400)
         .json({ status: 0, msg: "Please provide a schema name" });
+
+    for (const key in filters) {
+      if (filters[key] === "true") filters[key] = true;
+      else if (filters[key] === "false") filters[key] = false;
+      else if (!isNaN(filters[key])) filters[key] = Number(filters[key]);
+    }
 
     const selectSchema = {
       users: User,

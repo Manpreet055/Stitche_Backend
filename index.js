@@ -4,8 +4,8 @@ const express = require("express");
 const app = express();
 const helmet = require("helmet");
 const connectMongoDB = require("./config/connectMongoDB");
-const handleSearch = require("./controllers/handleSearchController");
-const handleGetstats = require("./controllers/statsController");
+const handleSearch = require("./controllers/coreControllers/handleSearchController");
+const handleGetstats = require("./controllers/coreControllers/statsController");
 const apiLimiter = require("./middlewares/rateLimit");
 const port = process.env.PORT || 3000;
 

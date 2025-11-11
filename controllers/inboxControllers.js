@@ -1,9 +1,8 @@
 const { ObjectId } = require("mongodb");
-const { connectMongoDB } = require("../config/connectMongoDB");
+const Inbox = require("../models/messageSchema");
 
 const handleGetAllMessages = async (req, res) => {
   try {
-    const Inbox = await connectMongoDB("inbox");
     let { limit, page } = req.query;
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
@@ -11,14 +10,11 @@ const handleGetAllMessages = async (req, res) => {
     const length = await Inbox.countDocuments();
     const totalPages = Math.ceil(length / limit);
 
-    const allMessages = await Inbox.find(
-      {},
-      { projection: { _id: 1, user: 1, messages: 1, subject: 1 } },
-    )
+    const allMessages = await Inbox.find({})
       .sort({ conversationId: 1, _id: 1 })
       .skip(skip)
       .limit(limit)
-      .toArray();
+      .lean();
 
     res.status(200).json({
       status: 1,
@@ -37,6 +33,7 @@ const handleGetAllMessages = async (req, res) => {
 const findChatById = async (req, res) => {
   try {
     const { id } = req.params;
+
     if (!ObjectId.isValid(id)) {
       res.status(400).json({
         status: 0,
@@ -44,8 +41,7 @@ const findChatById = async (req, res) => {
       });
     }
 
-    const Inbox = await connectMongoDB("inbox");
-    const foundChat = await Inbox.findOne({ _id: new ObjectId(id) });
+    const foundChat = await Inbox.findById(id).lean();
 
     if (!foundChat) {
       res.status(404).json({
@@ -66,45 +62,4 @@ const findChatById = async (req, res) => {
   }
 };
 
-const filterInbox = async (req, res) => {
-  try {
-    const { ...filters } = req.query;
-
-    if (Object.keys(filters).length === 0) {
-      return res.status(400).json({
-        status: 0,
-        msg: "Please provide filters",
-      });
-    }
-
-    for (const key in filters) {
-      if (filters[key] === "true") filters[key] = true;
-      else if (filters[key] === "false") filters[key] = false;
-      else if (!isNaN(filters[key])) filters[key] = Number(filters[key]);
-    }
-
-    const Inbox = await connectMongoDB("inbox");
-    const filteredInbox = await Inbox.find(filters).toArray();
-
-    if (filteredInbox.length === 0) {
-      return res.status(404).json({
-        status: 0,
-        msg: "No messages found",
-      });
-    }
-
-    res.status(200).json({
-      status: 1,
-      msg: "Inbox filtration successful.",
-      foundMessages: filteredInbox.length,
-      messages: filteredInbox,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: `Server Error: ${error.message}`,
-    });
-  }
-};
-
-module.exports = { handleGetAllMessages, findChatById, filterInbox };
+module.exports = { handleGetAllMessages, findChatById };
