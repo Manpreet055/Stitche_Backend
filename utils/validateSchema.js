@@ -2,6 +2,7 @@ const validateSchema = (schema) => {
   if (!schema) {
     const error = new Error("Please provide a schema name..");
     error.statusCode = 400;
+    throw error;
   }
   const selectSchema = {
     users: User,
@@ -10,10 +11,11 @@ const validateSchema = (schema) => {
     inbox: Inbox,
   };
 
-  const allowedCols = ["products", "orders", "users", "messages"];
+  const allowedCols = ["products", "orders", "users", "inbox"];
   if (!allowedCols.includes(schema)) {
     const error = new Error("This schema is not allowed..");
     error.statusCode = 400;
+    throw error;
   }
   return selectSchema[schema];
 };

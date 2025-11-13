@@ -64,13 +64,10 @@ const handleFindDataById = async (req, res) => {
     });
   }
 };
-
 const handleDeleteDataById = async (req, res) => {
   try {
     const { id } = req.params;
     const { schema } = req.query;
-    if (!id)
-      return res.status(400).json({ status: 0, msg: "Please provide a Id" });
 
     const selectedSchema = validateSchema(schema);
 
@@ -101,11 +98,6 @@ const handleDeleteDataById = async (req, res) => {
 const sortData = async (req, res) => {
   try {
     const { sortingOrder, sortField, schema } = req.query;
-
-    if (!schema)
-      return res
-        .status(400)
-        .json({ status: 0, msg: "Please provide a schema name" });
 
     if (!sortField)
       return res.status(400).json({
@@ -142,11 +134,6 @@ const sortData = async (req, res) => {
 const filterData = async (req, res) => {
   try {
     const { schema, ...filters } = req.query;
-    if (!schema) {
-      return res
-        .status(400)
-        .json({ status: 0, msg: "Please provide a schema name" });
-    }
     if (Object.keys(filters).length === 0) {
       return res.status(400).json({
         status: 0,
