@@ -1,3 +1,8 @@
+const User = require("../models/userSchema");
+const Product = require("../models/productSchema");
+const Inbox = require("../models/messageSchema");
+const Order = require("../models/orderSchema");
+
 const validateSchema = (schema) => {
   if (!schema) {
     const error = new Error("Please provide a schema name..");

@@ -1,12 +1,14 @@
-const User = require("../models/UserSchema");
-const Product = require("../../models/productSchema");
-const Inbox = require("../models/inboxSchema");
-const Order = require("../../models/orderSchema");
-const validateSchema = require("../../utils/validateSchema");
+const User = require("../models/userSchema");
+const Product = require("../models/productSchema");
+const Inbox = require("../models/messageSchema");
+const Order = require("../models/orderSchema");
+const validateSchema = require("../utils/validateSchema");
+const { ObjectId } = require("mongodb");
 
 const handleGetAllData = async (req, res) => {
   try {
-    let { limit, page, schema } = req.query;
+    const { schema } = req.params;
+    let { limit, page } = req.query;
     const selectedSchema = validateSchema(schema);
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
@@ -36,9 +38,16 @@ const handleGetAllData = async (req, res) => {
   }
 };
 
-const handleFindDataById = async (req, res) => {
+const handleGetDataById = async (req, res) => {
   try {
     const { id, schema } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      res.status(400).json({
+        status: 0,
+        msg: "Id is not valid",
+      });
+    }
 
     const selectedSchema = validateSchema(schema);
 
@@ -66,9 +75,14 @@ const handleFindDataById = async (req, res) => {
 };
 const handleDeleteDataById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { schema } = req.query;
+    const { id, schema } = req.params;
 
+    if (!ObjectId.isValid(id)) {
+      res.status(400).json({
+        status: 0,
+        msg: "Id is not valid",
+      });
+    }
     const selectedSchema = validateSchema(schema);
 
     const deleteData = await selectedSchema.findByIdAndDelete(id);
@@ -97,7 +111,9 @@ const handleDeleteDataById = async (req, res) => {
 
 const sortData = async (req, res) => {
   try {
-    const { sortingOrder, sortField, schema } = req.query;
+    const { schema } = req.params;
+
+    const { sortingOrder, sortField } = req.query;
 
     if (!sortField)
       return res.status(400).json({
@@ -133,7 +149,9 @@ const sortData = async (req, res) => {
 
 const filterData = async (req, res) => {
   try {
-    const { schema, ...filters } = req.query;
+    const { schema } = req.params;
+
+    const { ...filters } = req.query;
     if (Object.keys(filters).length === 0) {
       return res.status(400).json({
         status: 0,
@@ -172,10 +190,117 @@ const filterData = async (req, res) => {
   }
 };
 
+const handleSearch = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Search query is required",
+      });
+    }
+
+    const searchConfig = [
+      {
+        model: Product,
+        name: "products",
+        index: "products_search_index",
+        path: ["name", "title", "category", "brand", "subCategory"],
+      },
+      {
+        model: User,
+        name: "users",
+        index: "users_search_index",
+        path: [
+          "username",
+          "email",
+          "role",
+          "profile.fullName",
+          "profile.phone",
+          "profile.address.city",
+          "profile.address.country",
+          "profile.address.street",
+        ],
+      },
+      {
+        model: Order,
+        name: "orders",
+        index: "orders_search_index",
+        path: [
+          "orderId",
+          "user.username",
+          "user.email",
+          "user.firstName",
+          "user.lastName",
+          "user.phone",
+          "shipping.address",
+          "shipping.city",
+          "shipping.country",
+          "shipping.postalCode",
+        ],
+      },
+    ];
+
+    const searchResults = await Promise.all(
+      searchConfig.map(async (config) => {
+        const result = await config.model.aggregate([
+          {
+            $search: {
+              index: config.index,
+              text: {
+                query: query,
+                path: config.path,
+                fuzzy: { maxEdits: 2 },
+              },
+            },
+          },
+          { $limit: 15 },
+        ]);
+        return { [config.name]: result };
+      })
+    );
+
+    const merged = Object.assign({}, ...searchResults);
+    res.status(200).json({
+      status: 1,
+      msg: "Found these results..",
+      results: merged,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: `Server Error :${error.message}`,
+    });
+  }
+};
+
+const handleGetstats = async (req, res) => {
+  try {
+    const [getUsersCount, getPendingOrdersCount] = await Promise.all([
+      User.countDocuments(),
+      Order.countDocuments({ "status.orderStatus": "pending" }),
+    ]);
+
+    res.status(200).json({
+      status: 1,
+      msg: "Count completed",
+      usersCount: getUsersCount,
+      ordersCount: getPendingOrdersCount,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: `Server Error : ${error.message}`,
+    });
+  }
+};
+
 module.exports = {
   handleGetAllData,
-  handleFindDataById,
+  handleGetDataById,
   handleDeleteDataById,
   sortData,
   filterData,
+  handleSearch,
+  handleGetstats,
 };
