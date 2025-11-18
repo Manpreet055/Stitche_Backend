@@ -8,17 +8,25 @@ const { ObjectId } = require("mongodb");
 const handleGetAllData = async (req, res) => {
   try {
     const { schema } = req.params;
-    let { limit, page } = req.query;
     const selectedSchema = validateSchema(schema);
+    let { limit, page, sortingOrder, sortField, ...filters } = req.query;
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
     const skip = (page - 1) * limit;
     const length = await selectedSchema.countDocuments();
     const totalPages = Math.ceil(length / limit);
 
+    const order = sortingOrder === "desc" ? -1 : 1;
+
+    for (const key in filters) {
+      if (filters[key] === "true") filters[key] = true;
+      else if (filters[key] === "false") filters[key] = false;
+      else if (!isNaN(filters[key])) filters[key] = Number(filters[key]);
+    }
+
     const allData = await selectedSchema
-      .find({})
-      .sort({ _id: 1 })
+      .find(filters)
+      .sort(sortField ? { [sortField]: order } : { _id: 1 })
       .skip(skip)
       .limit(limit)
       .lean();
@@ -109,87 +117,6 @@ const handleDeleteDataById = async (req, res) => {
   }
 };
 
-const sortData = async (req, res) => {
-  try {
-    const { schema } = req.params;
-
-    const { sortingOrder, sortField } = req.query;
-
-    if (!sortField)
-      return res.status(400).json({
-        status: 0,
-        msg: "Please provide a sort field",
-      });
-
-    const selectedSchema = validateSchema(schema);
-
-    const order = sortingOrder === "desc" ? -1 : 1;
-
-    const sortedData = await selectedSchema.find().sort({ [sortField]: order });
-
-    if (!sortedData.length) {
-      return res.status(404).json({
-        status: 0,
-        msg: "No data found",
-      });
-    }
-
-    res.status(200).json({
-      status: 1,
-      msg: "Data sorted successfully",
-      data: sortedData,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: `Server Error: ${error.message}`,
-    });
-  }
-};
-
-const filterData = async (req, res) => {
-  try {
-    const { schema } = req.params;
-
-    const { ...filters } = req.query;
-    if (Object.keys(filters).length === 0) {
-      return res.status(400).json({
-        status: 0,
-        msg: "Please provide filters",
-      });
-    }
-
-    for (const key in filters) {
-      if (filters[key] === "true") filters[key] = true;
-      else if (filters[key] === "false") filters[key] = false;
-      else if (!isNaN(filters[key])) filters[key] = Number(filters[key]);
-    }
-
-    const selectedSchema = validateSchema(schema);
-
-    const filteredData = await selectedSchema.find(filters).lean();
-
-    if (!filteredData.length) {
-      return res.status(404).json({
-        status: 0,
-        msg: "No data found",
-      });
-    }
-
-    res.status(200).json({
-      status: 1,
-      msg: "Data filtration successful.",
-      resultsCount: filteredData.length,
-      data: filteredData,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: `Server Error: ${error.message}`,
-    });
-  }
-};
-
 const handleSearch = async (req, res) => {
   try {
     const { query } = req.query;
@@ -257,7 +184,7 @@ const handleSearch = async (req, res) => {
           { $limit: 15 },
         ]);
         return { [config.name]: result };
-      })
+      }),
     );
 
     const merged = Object.assign({}, ...searchResults);
@@ -299,8 +226,6 @@ module.exports = {
   handleGetAllData,
   handleGetDataById,
   handleDeleteDataById,
-  sortData,
-  filterData,
   handleSearch,
   handleGetstats,
 };

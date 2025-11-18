@@ -17,7 +17,7 @@ app.use(helmet());
 app.use(cors());
 app.use("/api/", apiLimiter);
 
-app.use("/api/product", products);
+app.use("/products", products);
 app.use("/api/", coreRouter);
 
 app.listen(port, () => {
