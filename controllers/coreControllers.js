@@ -4,12 +4,12 @@ const Inbox = require("../models/messageSchema");
 const Order = require("../models/orderSchema");
 const validateSchema = require("../utils/validateSchema");
 const { ObjectId } = require("mongodb");
-
+const applyFilters = require("../utils/applyFilters");
 const handleGetAllData = async (req, res) => {
   try {
     const { schema } = req.params;
     const selectedSchema = validateSchema(schema);
-    let { limit, page, sortingOrder, sortField, ...filters } = req.query;
+    let { limit, page, sortingOrder, sortField,...filters} = req.query;
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
     const skip = (page - 1) * limit;
@@ -17,13 +17,7 @@ const handleGetAllData = async (req, res) => {
     const totalPages = Math.ceil(length / limit);
 
     const order = sortingOrder === "desc" ? -1 : 1;
-
-    for (const key in filters) {
-      if (filters[key] === "true") filters[key] = true;
-      else if (filters[key] === "false") filters[key] = false;
-      else if (!isNaN(filters[key])) filters[key] = Number(filters[key]);
-    }
-
+    // filters = applyFilters(filters)
     const allData = await selectedSchema
       .find(filters)
       .sort(sortField ? { [sortField]: order } : { _id: 1 })
@@ -184,7 +178,7 @@ const handleSearch = async (req, res) => {
           { $limit: 15 },
         ]);
         return { [config.name]: result };
-      }),
+      })
     );
 
     const merged = Object.assign({}, ...searchResults);

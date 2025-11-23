@@ -2,20 +2,17 @@ const Product = require("../models/productSchema");
 
 const handleToggleFeatured = async (req, res) => {
   try {
-    const { isFeatured, id } = req.body;
-    if (!id || typeof isFeatured === "undefined") {
+    const { isFeatured, _id } = req.body;
+    if (!_id || typeof isFeatured === "undefined") {
       return res.status(400).json({
         status: 0,
         msg: "Please provide all details to updated the featured status ",
       });
     }
     const updateFeaturedStatus = await Product.findByIdAndUpdate(
-      { id },
-      {
-        $set: {
-          isFeatured: isFeatured,
-        },
-      },
+      _id,
+      { isFeatured },
+      { new: true }
     );
     res.status(200).json({
       status: 1,
@@ -46,7 +43,7 @@ const handleEditProduct = async (req, res) => {
 
     const updateProduct = await Product.findByIdAndUpdate(
       { id },
-      { $set: updates },
+      { $set: updates }
     );
 
     if (updateProduct.matchedCount === 0) {
@@ -68,7 +65,44 @@ const handleEditProduct = async (req, res) => {
   }
 };
 
+const handleCreateProduct = async (req, res) => {
+  try {
+    let { productDetails } = req.body;
+    if (!productDetails || Object.keys(productDetails).length === 0) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Please Provide Product details",
+      });
+    }
+    productDetails = {
+      ...productDetails,
+      rating: {
+        average: 0,
+        count: 0,
+      },
+    };
+    console.log(productDetails);
+    const CreateProduct = await Product.create(productDetails);
+    res.status(201).json({
+      status: 1,
+      msg: "Product Created Successfully",
+      createdProduct: CreateProduct,
+    });
+  } catch (error) {
+    if (error.name == "ValidationError") {
+      throw new Error("Invalid Product Data ..");
+    }
+    console.log(error.message);
+
+    res.status(400).json({
+      status: 0,
+      msg: `Server Error: ${error.message}`,
+    });
+  }
+};
+
 module.exports = {
   handleToggleFeatured,
   handleEditProduct,
+  handleCreateProduct,
 };
