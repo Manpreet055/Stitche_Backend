@@ -1,4 +1,5 @@
 const Product = require("../models/productSchema");
+const uploadBuffer = require("../utils/cloudinaryUpload");
 
 const handleToggleFeatured = async (req, res) => {
   try {
@@ -12,7 +13,7 @@ const handleToggleFeatured = async (req, res) => {
     const updateFeaturedStatus = await Product.findByIdAndUpdate(
       _id,
       { isFeatured },
-      { new: true }
+      { new: true },
     );
     res.status(200).json({
       status: 1,
@@ -43,7 +44,7 @@ const handleEditProduct = async (req, res) => {
 
     const updateProduct = await Product.findByIdAndUpdate(
       { id },
-      { $set: updates }
+      { $set: updates },
     );
 
     if (updateProduct.matchedCount === 0) {
@@ -67,20 +68,44 @@ const handleEditProduct = async (req, res) => {
 
 const handleCreateProduct = async (req, res) => {
   try {
-    let { productDetails } = req.body;
+    let productDetails = req.body;
     if (!productDetails || Object.keys(productDetails).length === 0) {
       return res.status(400).json({
         status: 0,
         msg: "Please Provide Product details",
       });
     }
-    productDetails = {
-      ...productDetails,
-      rating: {
-        average: 0,
-        count: 0,
-      },
-    };
+    console.log(req.body);
+    let imagesUrls = [];
+    let thumbnailUrl = "";
+
+    // if (productDetails.thumbnail) {
+    //   const file = productDetails.thumbnail;
+    //   const result = await uploadBuffer(file.buffer, "products/thumbnails");
+    //   thumbnailUrl = result.secure_url;
+    // }
+
+    // if (productDetails.images) {
+    //   for (const file of productDetails.images) {
+    //     const result = await uploadBuffer(file.buffer, "products/images");
+    //     imagesUrls.push(result.secure_url);
+    //   }
+    // }
+
+    // const media = {
+    //   images: imagesUrls,
+    //   thumbnail: thumbnailUrl,
+    // };
+
+    // productDetails = {
+    //   ...productDetails,
+    //   rating: {
+    //     average: 0,
+    //     count: 0,
+    //   },
+    //   media,
+    // };
+
     console.log(productDetails);
     const CreateProduct = await Product.create(productDetails);
     res.status(201).json({

@@ -1,4 +1,5 @@
 const express = require("express");
+const upload = require("../utils/multerUploads");
 const {
   handleToggleFeatured,
   handleEditProduct,
@@ -7,6 +8,9 @@ const {
 
 const router = express.Router();
 
-router.route("/").patch(handleToggleFeatured).post(handleCreateProduct);
+router.patch("/", handleToggleFeatured);
+
+router.post("/", handleCreateProduct);
+
 router.patch("/edit", handleEditProduct);
 module.exports = router;

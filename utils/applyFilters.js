@@ -11,7 +11,7 @@ const applyFilters = (filters) => {
     } else {
       acc[key] = value;
     }
-    return acc
+    return acc;
   }, {});
 
   return query;

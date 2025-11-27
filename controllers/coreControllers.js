@@ -9,7 +9,7 @@ const handleGetAllData = async (req, res) => {
   try {
     const { schema } = req.params;
     const selectedSchema = validateSchema(schema);
-    let { limit, page, sortingOrder, sortField,...filters} = req.query;
+    let { limit, page, sortingOrder, sortField, ...filters } = req.query;
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
     const skip = (page - 1) * limit;
@@ -178,7 +178,7 @@ const handleSearch = async (req, res) => {
           { $limit: 15 },
         ]);
         return { [config.name]: result };
-      })
+      }),
     );
 
     const merged = Object.assign({}, ...searchResults);

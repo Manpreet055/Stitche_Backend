@@ -11,7 +11,7 @@ const discountSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const ratingSchema = new mongoose.Schema(
@@ -25,7 +25,7 @@ const ratingSchema = new mongoose.Schema(
       default: 0,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const mediaSchema = new mongoose.Schema(
@@ -39,7 +39,7 @@ const mediaSchema = new mongoose.Schema(
       default: [],
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const ProductSchema = new mongoose.Schema(
@@ -78,7 +78,7 @@ const ProductSchema = new mongoose.Schema(
       createdAt: "timestamps.createdAt",
       updatedAt: "timestamps.updatedAt",
     },
-  }
+  },
 );
 
 const Product = mongoose.model("Product", ProductSchema);
