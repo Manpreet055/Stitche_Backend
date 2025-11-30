@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const discountSchema = new mongoose.Schema(
   {
-    discount: {
+    value: {
       type: Number,
       required: true,
     },
@@ -61,7 +61,7 @@ const ProductSchema = new mongoose.Schema(
     price: { type: Number, required: true },
 
     discount: { type: discountSchema, required: true },
-    quantity: { type: Number, required: true },
+    stock: { type: Number, required: true },
 
     rating: ratingSchema,
     media: mediaSchema,

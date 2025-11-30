@@ -1,16 +1,21 @@
 const express = require("express");
-const uploadMiddleWare = require("../middlewares/multerUploads");
+const {
+  handleNewImages,
+  handleUpdatedImages,
+} = require("../middlewares/multerUploads");
+
 const {
   handleToggleFeatured,
-  handleEditProduct,
+  handleUpdateProduct,
   handleCreateProduct,
 } = require("../controllers/productsController");
 
 const router = express.Router();
 
-router.patch("/", handleToggleFeatured);
+router.patch("/edit/:id", handleUpdatedImages, handleUpdateProduct);
+router
+  .route("/")
+  .patch(handleToggleFeatured)
+  .post(handleNewImages, handleCreateProduct);
 
-router.post("/", uploadMiddleWare, handleCreateProduct);
-
-router.patch("/edit", handleEditProduct);
 module.exports = router;
