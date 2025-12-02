@@ -8,16 +8,19 @@ const applyFilters = require("../utils/applyFilters");
 const handleGetAllData = async (req, res) => {
   try {
     const { schema } = req.params;
-    const selectedSchema = validateSchema(schema);
+    const selectedSchema = validateSchema(schema); // Validating the schema from where to fetch Data
     let { limit, page, sortingOrder, sortField, ...filters } = req.query;
+
+    filters = applyFilters(filters); // Parsing the filters into what mongoose want
+
     limit = parseInt(limit) || 10;
     page = parseInt(page) || 1;
     const skip = (page - 1) * limit;
-    const length = await selectedSchema.countDocuments();
-    const totalPages = Math.ceil(length / limit);
+    const length = await selectedSchema.countDocuments(filters);
+    const totalPages = Math.ceil(length / limit); //Calculating totalPages and sending it to the frontend for ease
 
     const order = sortingOrder === "desc" ? -1 : 1;
-    // filters = applyFilters(filters)
+
     const allData = await selectedSchema
       .find(filters)
       .sort(sortField ? { [sortField]: order } : { _id: 1 })

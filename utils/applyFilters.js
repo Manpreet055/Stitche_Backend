@@ -1,20 +1,14 @@
 const applyFilters = (filters) => {
-  const query = Object.entries(filters).reduce((acc, [key, value]) => {
-    if (value == null || value === "") return acc;
+  const newFilters = {};
 
-    if (Array.isArray(value)) {
-      acc[key] = { $in: value };
-    } else if (!Number.isNaN(value) && value !== "") {
-      acc[key] = Number(value);
-    } else if (value === "true" || value === "false") {
-      acc[key] = value === "true";
+  Object.keys(filters).forEach((key) => {
+    if (key.endsWith("[]")) {
+      newFilters[key.replace("[]", "")] = filters[key];
     } else {
-      acc[key] = value;
+      newFilters[key] = filters[key];
     }
-    return acc;
-  }, {});
-
-  return query;
+  });
+  return newFilters;
 };
 
 module.exports = applyFilters;
