@@ -1,6 +1,45 @@
 const Product = require("../models/productSchema");
 const uploadBuffer = require("../utils/cloudinaryUpload");
 const parseNumbers = require("../utils/parseNumber");
+const applyFilters = require("../utils/applyFilters");
+
+const handleGetProducts = async (req, res) => {
+  try {
+    let { limit, page, sortingOrder, sortField, ...filters } = req.query;
+
+    filters = applyFilters(filters); // Parsing the filters into what mongoose want
+
+    limit = parseInt(limit) || 10;
+    page = parseInt(page) || 1;
+    const skip = (page - 1) * limit;
+    const length = await Product.countDocuments({
+      ...filters,
+      isFeatured: true,
+    });
+    const totalPages = Math.ceil(length / limit); //Calculating totalPages and sending it to the frontend for ease
+
+    const order = sortingOrder === "desc" ? -1 : 1;
+
+    const allProducts = await Product.find({ ...filters, isFeatured: true })
+      .sort(sortField ? { [sortField]: order } : { _id: 1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    res.status(200).json({
+      status: 1,
+      msg: "Products fetched successfully ",
+      totalPages: totalPages,
+      products: allProducts,
+    });
+  } catch (error) {
+    const statusCode = error?.statusCode || 500;
+    res.status(statusCode).json({
+      status: 0,
+      msg: `Server Error : ${error.message}`,
+    });
+  }
+};
 
 const handleToggleFeatured = async (req, res) => {
   try {
@@ -187,6 +226,7 @@ const handleCreateProduct = async (req, res) => {
 };
 
 module.exports = {
+  handleGetProducts,
   handleToggleFeatured,
   handleUpdateProduct,
   handleCreateProduct,
