@@ -225,9 +225,47 @@ const handleCreateProduct = async (req, res) => {
   }
 };
 
+const handleProductSearch = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Search query is required",
+      });
+    }
+
+    const results = await Product.aggregate([
+      {
+        $search: {
+          index: "products_search_index",
+          text: {
+            query: query,
+            path: ["name", "title", "category", "brand", "subCategory"],
+            fuzzy: { maxEdits: 2 },
+          },
+        },
+      },
+      { $limit: 15 },
+    ]);
+
+    res.status(200).json({
+      status: 1,
+      msg: "Found these results..",
+      products: results,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: `Server Error :${error.message}`,
+    });
+  }
+};
+
 module.exports = {
   handleGetProducts,
   handleToggleFeatured,
   handleUpdateProduct,
   handleCreateProduct,
+  handleProductSearch,
 };

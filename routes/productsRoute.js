@@ -5,6 +5,7 @@ const {
 } = require("../middlewares/multerUploads");
 
 const {
+  handleProductSearch,
   handleGetProducts,
   handleToggleFeatured,
   handleUpdateProduct,
@@ -19,5 +20,6 @@ router
   .patch(handleToggleFeatured)
   .post(handleNewImages, handleCreateProduct);
 router.patch("/edit/:id", handleUpdatedImages, handleUpdateProduct);
+router.get("/search", handleProductSearch);
 
 module.exports = router;
