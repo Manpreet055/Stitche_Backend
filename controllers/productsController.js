@@ -227,7 +227,7 @@ const handleCreateProduct = async (req, res) => {
 
 const handleProductSearch = async (req, res) => {
   try {
-    const { query } = req.query;
+    const { query, limit } = req.query;
     if (!query) {
       return res.status(400).json({
         status: 0,
@@ -246,7 +246,7 @@ const handleProductSearch = async (req, res) => {
           },
         },
       },
-      { $limit: 15 },
+      { $limit: Number(limit) || 10 },
     ]);
 
     res.status(200).json({
