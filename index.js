@@ -6,6 +6,7 @@ const helmet = require("helmet");
 const connectMongoDB = require("./config/connectMongoDB");
 const apiLimiter = require("./middlewares/rateLimit");
 const coreRouter = require("./routes/coreRoutes");
+const userRouter = require("./routes/usersRoute");
 const port = process.env.PORT || 3000;
 
 const products = require("./routes/productsRoute");
@@ -19,6 +20,7 @@ app.use("/api/", apiLimiter);
 
 app.use("/products", products);
 app.use("/api/", coreRouter);
+app.use("/users", userRouter);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

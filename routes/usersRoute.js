@@ -1,12 +1,14 @@
 const express = require("express");
 const {
-  getUsers,
-  handleFindUserById,
+  handleLogin,
+  handleCart,
+  handleGetUserById,
 } = require("../controllers/usersControllers");
 
 const router = express.Router();
 
-router.get("/", getUsers);
-router.get("/:id", handleFindUserById);
+router.get("/login", handleLogin);
+router.route("/:id").get(handleGetUserById);
+router.patch("/cart/:userId", handleCart);
 
 module.exports = router;

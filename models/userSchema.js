@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 
 const addressSchema = new mongoose.Schema(
   {
@@ -44,6 +45,27 @@ const profileSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const cartItemSchema = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+    },
+    qty: {
+      type: Number,
+    },
+  },
+  { _id: false },
+);
+
+const userPreferences = new mongoose.Schema({
+  theme: {
+    type: String,
+    enum: ["dark", "light"],
+    default: "light",
+    lowercase: true,
+  },
+});
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -59,6 +81,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    cart: [cartItemSchema],
     role: {
       type: String,
       default: "Unknown",
@@ -81,6 +104,12 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
 
 const User = mongoose.model("User", userSchema);
 
