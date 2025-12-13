@@ -34,9 +34,9 @@ const handleLogin = async (req, res) => {
   }
 };
 
-const handleCart = async (req, res) => {
+const handleAddProductToCart = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.query;
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({
         status: 0,
@@ -83,6 +83,48 @@ const handleCart = async (req, res) => {
   }
 };
 
+const handleRemoveProductFromCart = async (req, res) => {
+  try {
+    const { userId, productId } = req.query;
+
+    if (!userId || !productId) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Please Provide Correct Product and User Id.",
+      });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        status: 0,
+        msg: "User does not exist.",
+      });
+    }
+
+    const cart = user.cart;
+    const idx = cart.findIndex(
+      (p) => String(p.product._id) === String(productId),
+    );
+
+    cart.splice(idx, 1);
+
+    await user.save();
+
+    res.status(200).json({
+      status: 0,
+      msg: "Product removed from cart.",
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: error.message,
+    });
+  }
+};
+
 const handleGetUserById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -108,12 +150,15 @@ const handleGetUserById = async (req, res) => {
       user,
     });
   } catch (error) {
-    const statusCode = error?.statusCode || 500;
-
-    res.status(statusCode).json({
+    res.status(500).json({
       status: 0,
       msg: `Something went wrong:${error.message}`,
     });
   }
 };
-module.exports = { handleLogin, handleCart, handleGetUserById };
+module.exports = {
+  handleLogin,
+  handleAddProductToCart,
+  handleGetUserById,
+  handleRemoveProductFromCart,
+};

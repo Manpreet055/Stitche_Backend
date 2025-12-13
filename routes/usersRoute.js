@@ -1,14 +1,20 @@
 const express = require("express");
 const {
   handleLogin,
-  handleCart,
+  handleAddProductToCart,
   handleGetUserById,
+  handleRemoveProductFromCart,
 } = require("../controllers/usersControllers");
 
 const router = express.Router();
 
 router.get("/login", handleLogin);
 router.route("/:id").get(handleGetUserById);
-router.patch("/cart/:userId", handleCart);
+
+// Cart Routes
+router
+  .route("/cart")
+  .patch(handleAddProductToCart)
+  .delete(handleRemoveProductFromCart);
 
 module.exports = router;
