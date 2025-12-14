@@ -34,93 +34,40 @@ const handleLogin = async (req, res) => {
   }
 };
 
-const handleAddProductToCart = async (req, res) => {
+const handleSignup = async (req, res) => {
   try {
-    const { userId } = req.query;
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
+    if (!req.body) {
       return res.status(400).json({
         status: 0,
-        msg: "User Id is not valid",
+        msg: "Please Provide Signup Data",
       });
     }
-    const cart = req.body;
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(401).json({
-        status: 0,
-        msg: "User not found..",
-      });
-    }
-    const flattendCart = cart.map((product) => ({
-      product: product.productId,
-      qty: typeof product.qty === "number" && product.qty > 0 ? product.qty : 1,
-    }));
-
-    flattendCart.forEach(({ product, qty }) => {
-      const idx = user.cart.findIndex(
-        (c) => String(c.product) === String(product),
-      );
-      if (idx > -1) {
-        user.cart[idx].qty = (user.cart[idx].qty || 0) + qty;
-      } else {
-        user.cart.push({ product, qty });
-      }
-    });
-
-    await user.save();
-
-    return res.status(200).json({
-      status: 0,
-      msg: "Cart updated",
-      cart: user.cart,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: error.message,
-    });
-  }
-};
-
-const handleRemoveProductFromCart = async (req, res) => {
-  try {
-    const { userId, productId } = req.query;
-
-    if (!userId || !productId) {
-      return res.status(400).json({
-        status: 0,
-        msg: "Please Provide Correct Product and User Id.",
-      });
-    }
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({
-        status: 0,
-        msg: "User does not exist.",
-      });
-    }
-
-    const cart = user.cart;
-    const idx = cart.findIndex(
-      (p) => String(p.product._id) === String(productId),
+    const randomPhoneNumber = Math.floor(
+      1000000000 + Math.random() * 9000000000,
     );
 
-    cart.splice(idx, 1);
+    const formData = {
+      ...req.body,
+      username: (req.body?.fullname + "123").trim(),
+      cart: [],
+      profile: {
+        fullName: req.body?.fullname,
+        phone: randomPhoneNumber,
+      },
+    };
+    delete formData?.fullname;
 
-    await user.save();
+    const user = await User.create(formData);
 
     res.status(200).json({
       status: 0,
-      msg: "Product removed from cart.",
+      msg: "Please Provide Signup Data",
       user,
     });
   } catch (error) {
     res.status(500).json({
       status: 0,
-      msg: error.message,
+      msg: "Server Error : " + error.message,
     });
   }
 };
@@ -156,8 +103,123 @@ const handleGetUserById = async (req, res) => {
     });
   }
 };
+
+const handleAddProductToCart = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        status: 0,
+        msg: "User Id is not valid",
+      });
+    }
+
+    const { product, qty } = req.body;
+    const updated = await User.updateOne(
+      { _id: userId, "cart.product": product },
+      { $inc: { "cart.$.qty": 1 } },
+    );
+
+    if (updated.matchedCount === 0) {
+      await User.updateOne(
+        { _id: userId },
+        { $push: { cart: { product, qty } } },
+      );
+    }
+
+    return res.status(200).json({
+      status: 0,
+      msg: "Cart updated",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: error.message,
+    });
+  }
+};
+
+const handleRemoveProductFromCart = async (req, res) => {
+  try {
+    const { userId, productId } = req.query;
+
+    if (!userId || !productId) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Please Provide Correct Product and User Id.",
+      });
+    }
+
+    const user = await User.updateOne(
+      { _id: userId, "cart.product": productId },
+      { $pull: { cart: { product: productId } } },
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        status: 0,
+        msg: "User does not exist.",
+      });
+    }
+
+    res.status(200).json({
+      status: 0,
+      msg: "Product removed from cart.",
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: error.message,
+    });
+  }
+};
+
+const handleCartQty = async (req, res) => {
+  try {
+    const { userId, product, qty } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(userId) || !product) {
+      return res.status(400).json({
+        status: 0,
+        msg: "Please Provide Product and User ID",
+      });
+    }
+
+    if (!qty || qty <= 0) {
+      await User.updateOne(
+        { _id: userId },
+        {
+          $pull: { cart: { product } },
+        },
+      );
+      return res.status(200).json({
+        status: 1,
+        msg: "Product removed from the cart",
+      });
+    }
+
+    await User.updateOne(
+      { _id: userId, "cart.product": product },
+      { $set: { "cart.$.qty": qty } },
+    );
+
+    res.status(200).json({
+      status: 1,
+      msg: "Quantity updated.",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 0,
+      msg: error.message,
+    });
+  }
+};
+
 module.exports = {
+  handleCartQty,
   handleLogin,
+  handleSignup,
   handleAddProductToCart,
   handleGetUserById,
   handleRemoveProductFromCart,

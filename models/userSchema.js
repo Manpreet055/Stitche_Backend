@@ -9,11 +9,11 @@ const addressSchema = new mongoose.Schema(
     },
     city: {
       type: String,
-      required: true,
+      default: "Not specified",
     },
     country: {
       type: String,
-      required: true,
+      default: "Not specified",
     },
     postalCode: {
       type: String,
@@ -30,16 +30,12 @@ const profileSchema = new mongoose.Schema(
     },
     phone: {
       type: Number,
-      required: true,
-      unique: true,
     },
     avatar: {
       type: String,
-      required: true,
     },
     address: {
       type: addressSchema,
-      required: true,
     },
   },
   { _id: false },
@@ -50,22 +46,28 @@ const cartItemSchema = new mongoose.Schema(
     product: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
+      required: true,
     },
     qty: {
       type: Number,
+      min: 1,
+      default: 1,
     },
   },
   { _id: false },
 );
 
-const userPreferences = new mongoose.Schema({
-  theme: {
-    type: String,
-    enum: ["dark", "light"],
-    default: "light",
-    lowercase: true,
+const userPreferences = new mongoose.Schema(
+  {
+    theme: {
+      type: String,
+      enum: ["dark", "light"],
+      default: "light",
+      lowercase: true,
+    },
   },
-});
+  { _id: false },
+);
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -86,17 +88,21 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "Unknown",
     },
+    prefrences: userPreferences,
+
     profile: {
       type: profileSchema,
-      required: true,
     },
+
     refreshToken: {
       type: String,
     },
+
     isVerified: {
       type: Boolean,
       default: false,
     },
+
     isActive: {
       type: Boolean,
       default: true,
