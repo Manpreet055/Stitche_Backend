@@ -8,19 +8,23 @@ const {
   handleCartQty,
 } = require("../controllers/usersControllers");
 
+const { jwtAuthMiddleware } = require("../middlewares/jwtAuthMiddleware");
+const getAccessToken = require("../middlewares/getAcessToken");
+
 const router = express.Router();
 
-router.get("/login", handleLogin);
+router.post("/login", handleLogin);
 router.post("/signup", handleSignup);
 
 // Cart Routes
 router
   .route("/cart")
-  .patch(handleAddProductToCart)
-  .delete(handleRemoveProductFromCart);
+  .patch(jwtAuthMiddleware, handleAddProductToCart)
+  .delete(jwtAuthMiddleware, handleRemoveProductFromCart);
 
-router.patch("/cart/update", handleCartQty);
+router.post("/refresh-token", getAccessToken);
+router.patch("/cart/update", jwtAuthMiddleware, handleCartQty);
 
-router.route("/:id").get(handleGetUserById);
+router.route("/").get(jwtAuthMiddleware, handleGetUserById);
 
 module.exports = router;

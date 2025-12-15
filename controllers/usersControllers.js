@@ -1,12 +1,15 @@
 const User = require("../models/userSchema");
 const bcrypt = require("bcrypt");
-// const { ObjectId } = require("mongodb");
+const {
+  generateAccessToken,
+  generateRefreshToken,
+} = require("../middlewares/jwtAuthMiddleware");
 const mongoose = require("mongoose");
 
 const handleLogin = async (req, res) => {
   try {
-    const { email, password } = req.query;
-    const user = await User.findOne({ email }).populate("cart");
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({
         status: 0,
@@ -20,11 +23,28 @@ const handleLogin = async (req, res) => {
         msg: "Incorrect Password",
       });
     }
+    const payload = {
+      id: user.id,
+      role: user.role,
+    };
+
+    const token = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    user.refreshToken = [...user.refreshToken, refreshToken];
+    await user.save();
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 24 * 60 * 60 * 1000,
+    });
 
     res.status(200).json({
       status: 1,
-      msg: "Login Sucessfully",
-      user,
+      msg: "Login Successfull",
+      token,
     });
   } catch (error) {
     res.status(500).json({
@@ -59,10 +79,26 @@ const handleSignup = async (req, res) => {
 
     const user = await User.create(formData);
 
+    const payload = {
+      id: user.id,
+    };
+    const token = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    user.refreshToken = [...user.refreshToken, refreshToken];
+    await user.save();
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 24 * 60 * 60 * 1000,
+    });
+
     res.status(200).json({
-      status: 0,
-      msg: "Please Provide Signup Data",
-      user,
+      status: 1,
+      msg: "User Created",
+      token,
     });
   } catch (error) {
     res.status(500).json({
@@ -74,7 +110,7 @@ const handleSignup = async (req, res) => {
 
 const handleGetUserById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.user.payload;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       res.status(400).json({
@@ -106,8 +142,8 @@ const handleGetUserById = async (req, res) => {
 
 const handleAddProductToCart = async (req, res) => {
   try {
-    const { userId } = req.query;
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
+    const { id } = req.user.payload;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         status: 0,
         msg: "User Id is not valid",
@@ -116,15 +152,12 @@ const handleAddProductToCart = async (req, res) => {
 
     const { product, qty } = req.body;
     const updated = await User.updateOne(
-      { _id: userId, "cart.product": product },
+      { _id: id, "cart.product": product },
       { $inc: { "cart.$.qty": 1 } },
     );
 
     if (updated.matchedCount === 0) {
-      await User.updateOne(
-        { _id: userId },
-        { $push: { cart: { product, qty } } },
-      );
+      await User.updateOne({ _id: id }, { $push: { cart: { product, qty } } });
     }
 
     return res.status(200).json({
@@ -141,9 +174,10 @@ const handleAddProductToCart = async (req, res) => {
 
 const handleRemoveProductFromCart = async (req, res) => {
   try {
-    const { userId, productId } = req.query;
+    const { productId } = req.query;
+    const { id } = req.user.payload;
 
-    if (!userId || !productId) {
+    if (!id || !productId) {
       return res.status(400).json({
         status: 0,
         msg: "Please Provide Correct Product and User Id.",
@@ -151,7 +185,7 @@ const handleRemoveProductFromCart = async (req, res) => {
     }
 
     const user = await User.updateOne(
-      { _id: userId, "cart.product": productId },
+      { _id: id, "cart.product": productId },
       { $pull: { cart: { product: productId } } },
     );
 
@@ -177,9 +211,9 @@ const handleRemoveProductFromCart = async (req, res) => {
 
 const handleCartQty = async (req, res) => {
   try {
-    const { userId, product, qty } = req.query;
-
-    if (!mongoose.Types.ObjectId.isValid(userId) || !product) {
+    const { product, qty } = req.body;
+    const { id } = req.user.payload;
+    if (!mongoose.Types.ObjectId.isValid(id) || !product) {
       return res.status(400).json({
         status: 0,
         msg: "Please Provide Product and User ID",
@@ -188,7 +222,7 @@ const handleCartQty = async (req, res) => {
 
     if (!qty || qty <= 0) {
       await User.updateOne(
-        { _id: userId },
+        { _id: id },
         {
           $pull: { cart: { product } },
         },
@@ -200,7 +234,7 @@ const handleCartQty = async (req, res) => {
     }
 
     await User.updateOne(
-      { _id: userId, "cart.product": product },
+      { _id: id, "cart.product": product },
       { $set: { "cart.$.qty": qty } },
     );
 

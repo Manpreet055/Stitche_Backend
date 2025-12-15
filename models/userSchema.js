@@ -73,6 +73,7 @@ const userSchema = new mongoose.Schema(
     username: {
       type: String,
       required: true,
+      unique: true,
     },
     email: {
       type: String,
@@ -95,7 +96,8 @@ const userSchema = new mongoose.Schema(
     },
 
     refreshToken: {
-      type: String,
+      type: [String],
+      default: [],
     },
 
     isVerified: {
