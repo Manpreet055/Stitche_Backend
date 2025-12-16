@@ -11,14 +11,14 @@ const handleLogin = async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({
+      return res.status(400).json({
         status: 0,
         msg: "Invalid email or password",
       });
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({
+      return res.status(400).json({
         status: 0,
         msg: "Incorrect Password",
       });
@@ -40,7 +40,6 @@ const handleLogin = async (req, res) => {
       sameSite: "strict",
       maxAge: 15 * 24 * 60 * 60 * 1000,
     });
-
     res.status(200).json({
       status: 1,
       msg: "Login Successfull",
