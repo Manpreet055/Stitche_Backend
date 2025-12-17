@@ -1,5 +1,5 @@
-const Product = require("../models/productSchema");
-const uploadBuffer = require("../utils/cloudinaryUpload");
+const Product = require("../models/product.model");
+const uploadBuffer = require("../utils/uploadBuffer");
 const parseNumbers = require("../utils/parseNumber");
 const applyFilters = require("../utils/applyFilters");
 
@@ -42,14 +42,14 @@ const handleGetProducts = async (req, res) => {
 };
 
 const handleToggleFeatured = async (req, res) => {
+  const { isFeatured, _id } = req.body;
+  if (!_id || typeof isFeatured === "undefined") {
+    return res.status(400).json({
+      status: 0,
+      msg: "Please provide all details to updated the featured status ",
+    });
+  }
   try {
-    const { isFeatured, _id } = req.body;
-    if (!_id || typeof isFeatured === "undefined") {
-      return res.status(400).json({
-        status: 0,
-        msg: "Please provide all details to updated the featured status ",
-      });
-    }
     const updateFeaturedStatus = await Product.findByIdAndUpdate(
       _id,
       { isFeatured },
@@ -67,15 +67,16 @@ const handleToggleFeatured = async (req, res) => {
     });
   }
 };
+
 const handleUpdateProduct = async (req, res) => {
+  const updates = req.body;
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ status: 0, msg: "Product ID required" });
+  }
+
   try {
-    const updates = req.body;
-    const { id } = req.params;
-
-    if (!id) {
-      return res.status(400).json({ status: 0, msg: "Product ID required" });
-    }
-
     const product = await Product.findById(id);
     if (!product) {
       return res.status(404).json({ status: 0, msg: "Product not found" });
@@ -221,20 +222,20 @@ const handleCreateProduct = async (req, res) => {
       createdProduct: created,
     });
   } catch (error) {
-    res.status(400).json({ status: 0, msg: error.message });
+    res.status(500).json({ status: 0, msg: error.message });
   }
 };
 
 const handleProductSearch = async (req, res) => {
-  try {
-    const { query, limit } = req.query;
-    if (!query) {
-      return res.status(400).json({
-        status: 0,
-        msg: "Search query is required",
-      });
-    }
+  const { query, limit } = req.query;
+  if (!query) {
+    return res.status(400).json({
+      status: 0,
+      msg: "Search query is required",
+    });
+  }
 
+  try {
     const results = await Product.aggregate([
       {
         $search: {

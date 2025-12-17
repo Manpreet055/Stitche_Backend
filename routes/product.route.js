@@ -2,7 +2,7 @@ const express = require("express");
 const {
   handleNewImages,
   handleUpdatedImages,
-} = require("../middlewares/multerUploads");
+} = require("../middlewares/multer.middleware");
 
 const {
   handleProductSearch,
@@ -10,7 +10,7 @@ const {
   handleToggleFeatured,
   handleUpdateProduct,
   handleCreateProduct,
-} = require("../controllers/productsController");
+} = require("../controllers/product.controller");
 
 const router = express.Router();
 

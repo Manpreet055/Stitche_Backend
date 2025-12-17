@@ -5,7 +5,7 @@ const {
   handleDeleteDataById,
   handleSearch,
   handleGetstats,
-} = require("../controllers/coreControllers");
+} = require("../controllers/core.controller");
 
 const router = express.Router();
 

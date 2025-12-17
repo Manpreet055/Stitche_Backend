@@ -1,33 +1,44 @@
 require("dotenv").config();
+const port = process.env.PORT || 3000;
+const connectMongoDB = require("./config/connectMongoDB");
+
+//Middlewares
 const cors = require("cors");
 const express = require("express");
-const app = express();
 const helmet = require("helmet");
-const connectMongoDB = require("./config/connectMongoDB");
-const apiLimiter = require("./middlewares/rateLimit");
-const coreRouter = require("./routes/coreRoutes");
-const userRouter = require("./routes/usersRoute");
-const port = process.env.PORT || 3000;
 const cookieParser = require("cookie-parser");
+const rateLimiter = require("./middlewares/rateLimiter.middleware");
 
-const products = require("./routes/productsRoute");
+// All routes
+const coreRoute = require("./routes/core.route");
+const userRoute = require("./routes/user.route");
+const cartRoute = require("./routes/cart.route");
+const inboxRoute = require("./routes/inbox.route");
+const orderRoute = require("./routes/order.route");
+const productRoute = require("./routes/product.route");
 
+const app = express();
 connectMongoDB();
 
+// Initializing Middlewares
 app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
+app.use("/api/", rateLimiter);
 app.use(
   cors({
     origin: "http://localhost:5173", // frontend URL
     credentials: true,
   }),
 );
-app.use("/api/", apiLimiter);
 
-app.use("/products", products);
-app.use("/api/", coreRouter);
-app.use("/users", userRouter);
+// Routes prefixes
+app.use("/api", coreRoute);
+app.use("/products", productRoute);
+app.use("/users", userRoute);
+app.use("/cart", cartRoute);
+app.use("/inbox", inboxRoute);
+app.use("/order", orderRoute);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

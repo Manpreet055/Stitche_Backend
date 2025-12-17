@@ -1,10 +1,9 @@
-const User = require("../models/userSchema");
-const Product = require("../models/productSchema");
-const Inbox = require("../models/messageSchema");
-const Order = require("../models/orderSchema");
+const User = require("../models/user.model");
+const Product = require("../models/product.model");
+const Order = require("../models/order.model");
 const validateSchema = require("../utils/validateSchema");
-const { ObjectId } = require("mongodb");
 const applyFilters = require("../utils/applyFilters");
+const mongoose = require("mongoose");
 
 const handleGetAllData = async (req, res) => {
   try {
@@ -45,22 +44,21 @@ const handleGetAllData = async (req, res) => {
 };
 
 const handleGetDataById = async (req, res) => {
+  const { id, schema } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      status: 0,
+      msg: "Id is not valid",
+    });
+  }
+
   try {
-    const { id, schema } = req.params;
-
-    if (!ObjectId.isValid(id)) {
-      res.status(400).json({
-        status: 0,
-        msg: "Id is not valid",
-      });
-    }
-
     const selectedSchema = validateSchema(schema);
 
     const foundData = await selectedSchema.findById(id).lean();
 
     if (!foundData) {
-      res.status(404).json({
+      return res.status(404).json({
         status: 0,
         msg: "Data not found",
       });
@@ -80,15 +78,15 @@ const handleGetDataById = async (req, res) => {
   }
 };
 const handleDeleteDataById = async (req, res) => {
-  try {
-    const { id, schema } = req.params;
+  const { id, schema } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      status: 0,
+      msg: "Id is not valid",
+    });
+  }
 
-    if (!ObjectId.isValid(id)) {
-      res.status(400).json({
-        status: 0,
-        msg: "Id is not valid",
-      });
-    }
+  try {
     const selectedSchema = validateSchema(schema);
 
     const deleteData = await selectedSchema.findByIdAndDelete(id);
@@ -116,15 +114,15 @@ const handleDeleteDataById = async (req, res) => {
 };
 
 const handleSearch = async (req, res) => {
-  try {
-    const { query } = req.query;
-    if (!query) {
-      return res.status(400).json({
-        status: 0,
-        msg: "Search query is required",
-      });
-    }
+  const { query } = req.query;
+  if (!query) {
+    return res.status(400).json({
+      status: 0,
+      msg: "Search query is required",
+    });
+  }
 
+  try {
     const searchConfig = [
       {
         model: Product,

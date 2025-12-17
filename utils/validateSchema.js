@@ -1,7 +1,7 @@
-const User = require("../models/userSchema");
-const Product = require("../models/productSchema");
-const Inbox = require("../models/messageSchema");
-const Order = require("../models/orderSchema");
+const User = require("../models/user.model");
+const Product = require("../models/product.model");
+const Inbox = require("../models/message.model");
+const Order = require("../models/order.model");
 
 const validateSchema = (schema) => {
   if (!schema) {

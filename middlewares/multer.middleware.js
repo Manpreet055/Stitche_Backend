@@ -4,13 +4,13 @@ const storage = multer.memoryStorage();
 
 const upload = multer({ storage });
 
-//MiddleWare to Handle images on request of creating new Product
+// Handle new images
 const handleNewImages = upload.fields([
   { name: "thumbnail", maxCount: 1 },
   { name: "images", maxCount: 8 },
 ]);
 
-//MiddleWare to Handle images on request of updating Product
+// Update images
 const handleUpdatedImages = upload.fields([
   { name: "newThumbnail", maxCount: 1 },
   { name: "newImages", maxCount: 10 },
