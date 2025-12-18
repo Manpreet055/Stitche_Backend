@@ -30,30 +30,43 @@ const authMiddleware = (req, res, next) => {
 
 const generateAccessToken = (payload) => {
   return jwt.sign({ payload }, process.env.JWT_ACCESS_SECRET, {
-    expiresIn: "15m",
+    expiresIn: "5s",
   });
 };
 
 const generateRefreshToken = (payload) => {
   return jwt.sign({ payload }, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: "15d",
+    expiresIn: "10s",
   });
 };
 
-const getNewAccessToken = (req, res) => {
+const getNewAccessToken = async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+  if (!refreshToken) {
+    return res.status(401).json({ msg: "Refresh token missing" });
+  }
+  let user;
   try {
-    const refreshToken = req.cookies?.refreshToken;
-
-    if (!refreshToken) {
-      return res.status(401).json({ msg: "Refresh token missing" });
-    }
-
+    user = await User.findOne({ refreshToken });
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const accessToken = generateAccessToken(decoded.payload);
 
+    if (!user.refreshToken.includes(refreshToken)) {
+      return res.status(403).json({
+        msg: "Refresh token is used or invalid.",
+      });
+    }
+    const accessToken = generateAccessToken(decoded.payload);
     res.status(200).json({ token: accessToken });
   } catch (err) {
-    res.status(401).json({ msg: "Invalid or expired refresh token" });
+    if (user) {
+      user.refreshToken = user.refreshToken.filter(
+        (token) => token !== refreshToken,
+      );
+      console.log("token removed");
+      await user.save();
+    }
+    res.status(403).json({ msg: "Invalid or expired refresh token" });
+    throw err;
   }
 };
 

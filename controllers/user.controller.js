@@ -7,7 +7,7 @@ const {
 const mongoose = require("mongoose");
 
 const handleGetUserById = async (req, res) => {
-  const { id } = req.user.payload;
+  const { id } = req?.user?.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
       status: 0,
@@ -24,6 +24,7 @@ const handleGetUserById = async (req, res) => {
         msg: "User not found",
       });
     }
+
     res.status(200).json({
       status: 1,
       msg: "User Found.",
@@ -120,11 +121,9 @@ const handleLogin = async (req, res) => {
 
     const token = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
-
-    // if user has more than 2 token we are deleting old token from the database
-    // and assigning new token to him
-    if (user.refreshToken.length > 2) {
-      user.refreshToken = [refreshToken];
+    if (user.refreshToken.length === 5) {
+      user.refreshToken.shift();
+      user.refreshToken.push(refreshToken);
     } else {
       user.refreshToken.push(refreshToken);
     }
@@ -150,7 +149,7 @@ const handleLogin = async (req, res) => {
 };
 
 const handleLogoutUser = async (req, res) => {
-  const { id } = req.user.payload;
+  const { id } = req?.user?.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
       status: 0,
@@ -179,7 +178,6 @@ const handleLogoutUser = async (req, res) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "none",
   });
-  console.log("logout");
   return res.sendStatus(204);
 };
 

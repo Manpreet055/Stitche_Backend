@@ -4,6 +4,7 @@ const connectMongoDB = require("./config/connectMongoDB");
 
 //Middlewares
 const cors = require("cors");
+const morgan = require("morgan");
 const express = require("express");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
@@ -21,10 +22,15 @@ const app = express();
 connectMongoDB();
 
 // Initializing Middlewares
+app.use(
+  morgan("dev", {
+    //this is the middleware used to check the incoming logs
+    skip: (req) => req.method === "OPTIONS",
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
-app.use("/api/", rateLimiter);
 app.use(
   cors({
     origin: "http://localhost:5173", // frontend URL
@@ -33,12 +39,12 @@ app.use(
 );
 
 // Routes prefixes
-app.use("/api", coreRoute);
-app.use("/products", productRoute);
-app.use("/users", userRoute);
-app.use("/cart", cartRoute);
-app.use("/inbox", inboxRoute);
-app.use("/order", orderRoute);
+app.use("/api", rateLimiter, coreRoute);
+app.use("/products", rateLimiter, productRoute);
+app.use("/users", rateLimiter, userRoute);
+app.use("/cart", rateLimiter, cartRoute);
+app.use("/inbox", rateLimiter, inboxRoute);
+app.use("/order", rateLimiter, orderRoute);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
