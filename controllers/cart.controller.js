@@ -1,7 +1,7 @@
 const User = require("../models/user.model");
 const mongoose = require("mongoose");
 
-const handleGetCartData = async (req, res) => {
+exports.handleGetCartData = async (req, res) => {
   // Validating the UserId first
   const { id } = req?.user?.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -11,29 +11,22 @@ const handleGetCartData = async (req, res) => {
     });
   }
 
-  try {
-    const user = await User.findById(id).populate("cart.product");
+  const user = await User.findById(id).populate("cart.product");
 
-    if (!user) {
-      return res.status(400).json({
-        status: 0,
-        msg: "User not found",
-      });
-    }
-    res.status(200).json({
-      status: 1,
-      msg: "Cart fetched ..",
-      cart: user.cart,
-    });
-  } catch (error) {
-    res.status(500).json({
+  if (!user) {
+    return res.status(400).json({
       status: 0,
-      msg: error.message,
+      msg: "User not found",
     });
   }
+  res.status(200).json({
+    status: 1,
+    msg: "Cart fetched ..",
+    cart: user.cart,
+  });
 };
 
-const handleAddProductToCart = async (req, res) => {
+exports.handleAddProductToCart = async (req, res) => {
   // Validating the User Id
   const { id } = req.user.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -43,30 +36,23 @@ const handleAddProductToCart = async (req, res) => {
     });
   }
 
-  try {
-    const { product, qty } = req.body;
+  const { product, qty } = req.body;
 
-    const updated = await User.updateOne(
-      { _id: id, "cart.product": product },
-      { $inc: { "cart.$.qty": 1 } },
-    );
+  const updated = await User.updateOne(
+    { _id: id, "cart.product": product },
+    { $inc: { "cart.$.qty": 1 } },
+  );
 
-    if (updated.matchedCount === 0) {
-      await User.updateOne({ _id: id }, { $push: { cart: { product, qty } } });
-    }
-    return res.status(200).json({
-      status: 0,
-      msg: "Cart updated",
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: error.message,
-    });
+  if (updated.matchedCount === 0) {
+    await User.updateOne({ _id: id }, { $push: { cart: { product, qty } } });
   }
+  return res.status(200).json({
+    status: 0,
+    msg: "Cart updated",
+  });
 };
 
-const handleRemoveProductFromCart = async (req, res) => {
+exports.handleRemoveProductFromCart = async (req, res) => {
   // Validating the User Id
   const { id } = req.user.payload;
   const { productId } = req.query;
@@ -83,33 +69,26 @@ const handleRemoveProductFromCart = async (req, res) => {
       msg: "Please Provide Correct Product and User Id.",
     });
   }
-  try {
-    const user = await User.updateOne(
-      { _id: id, "cart.product": productId },
-      { $pull: { cart: { product: productId } } },
-    );
+  const user = await User.updateOne(
+    { _id: id, "cart.product": productId },
+    { $pull: { cart: { product: productId } } },
+  );
 
-    if (!user) {
-      return res.status(404).json({
-        status: 0,
-        msg: "User does not exist.",
-      });
-    }
-
-    res.status(200).json({
+  if (!user) {
+    return res.status(404).json({
       status: 0,
-      msg: "Product removed from cart.",
-      user,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: error.message,
+      msg: "User does not exist.",
     });
   }
+
+  res.status(200).json({
+    status: 0,
+    msg: "Product removed from cart.",
+    user,
+  });
 };
 
-const handleUpdateCartQty = async (req, res) => {
+exports.handleUpdateCartQty = async (req, res) => {
   const { product, qty } = req.body;
   const { id } = req.user.payload;
   if (!mongoose.Types.ObjectId.isValid(id) || !product) {
@@ -119,40 +98,26 @@ const handleUpdateCartQty = async (req, res) => {
     });
   }
 
-  try {
-    if (!qty || qty <= 0) {
-      await User.updateOne(
-        { _id: id },
-        {
-          $pull: { cart: { product } },
-        },
-      );
-      return res.status(200).json({
-        status: 1,
-        msg: "Product removed from the cart",
-      });
-    }
-
+  if (!qty || qty <= 0) {
     await User.updateOne(
-      { _id: id, "cart.product": product },
-      { $set: { "cart.$.qty": qty } },
+      { _id: id },
+      {
+        $pull: { cart: { product } },
+      },
     );
-
-    res.status(200).json({
+    return res.status(200).json({
       status: 1,
-      msg: "Quantity updated.",
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: error.message,
+      msg: "Product removed from the cart",
     });
   }
-};
 
-module.exports = {
-  handleGetCartData,
-  handleUpdateCartQty,
-  handleAddProductToCart,
-  handleRemoveProductFromCart,
+  await User.updateOne(
+    { _id: id, "cart.product": product },
+    { $set: { "cart.$.qty": qty } },
+  );
+
+  res.status(200).json({
+    status: 1,
+    msg: "Quantity updated.",
+  });
 };

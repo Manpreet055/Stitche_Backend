@@ -6,8 +6,16 @@ const {
 } = require("../middlewares/auth.middleware");
 const mongoose = require("mongoose");
 
-const handleGetUserById = async (req, res) => {
-  const { id } = req?.user?.payload;
+exports.handleGetUserById = async (req, res) => {
+  if (!req.user || !req.user.payload?.id) {
+    return res.status(401).json({
+      status: 0,
+      msg: "Unauthorized",
+    });
+  }
+
+  // Valiidating the Id
+  const { id } = req.user.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
       status: 0,
@@ -15,30 +23,23 @@ const handleGetUserById = async (req, res) => {
     });
   }
 
-  try {
-    const user = await User.findById(id).populate("cart.product");
+  const user = await User.findById(id).populate("cart.product");
 
-    if (!user) {
-      return res.status(404).json({
-        status: 0,
-        msg: "User not found",
-      });
-    }
-
-    res.status(200).json({
-      status: 1,
-      msg: "User Found.",
-      user,
-    });
-  } catch (error) {
-    res.status(500).json({
+  if (!user) {
+    return res.status(404).json({
       status: 0,
-      msg: `Something went wrong:${error.message}`,
+      msg: "User not found",
     });
   }
+
+  res.status(200).json({
+    status: 1,
+    msg: "User found",
+    user,
+  });
 };
 
-const handleSignup = async (req, res) => {
+exports.handleSignup = async (req, res) => {
   if (!req.body) {
     return res.status(400).json({
       status: 0,
@@ -46,109 +47,102 @@ const handleSignup = async (req, res) => {
     });
   }
 
-  try {
-    // generating random Number
-    const randomPhoneNumber = Math.floor(
-      1000000000 + Math.random() * 9000000000,
-    );
+  // generating random Number
+  const randomPhoneNumber = Math.floor(1000000000 + Math.random() * 9000000000);
 
-    // generating form data to pass schema validation
-    const formData = {
-      ...req.body,
-      username: (req.body?.fullname + "123").trim(),
-      cart: [],
-      profile: {
-        fullName: req.body?.fullname,
-        phone: randomPhoneNumber,
-      },
-    };
+  // generating form data to pass schema validation
+  const formData = {
+    ...req.body,
+    username: (req.body?.fullname + "123").trim(),
+    cart: [],
+    profile: {
+      fullName: req.body?.fullname,
+      phone: randomPhoneNumber,
+    },
+  };
 
-    // deleting the full name key from formdata
-    delete formData?.fullname;
+  // deleting the full name key from formdata
+  delete formData?.fullname;
 
-    const user = await User.create(formData);
+  const user = await User.create(formData);
 
-    // creating payload to generate tokens
-    const payload = {
-      id: user.id,
-    };
-    const token = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken(payload);
-    user.refreshToken = [...user.refreshToken, refreshToken];
-    await user.save();
+  // creating payload to generate tokens
+  const payload = {
+    id: user.id,
+  };
+  const token = generateAccessToken(payload);
+  const refreshToken = generateRefreshToken(payload);
+  user.refreshToken = [...user.refreshToken, refreshToken];
+  await user.save();
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-      maxAge: 15 * 24 * 60 * 60 * 1000,
-    });
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 15 * 24 * 60 * 60 * 1000,
+  });
 
-    res.status(200).json({
-      status: 1,
-      msg: "User Created",
-      token,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: "Server Error : " + error.message,
-    });
-  }
+  res.status(201).json({
+    status: 1,
+    msg: "User Created",
+    token,
+  });
 };
 
-const handleLogin = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({
-        status: 0,
-        msg: "Invalid email or password",
-      });
-    }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({
-        status: 0,
-        msg: "Incorrect Password",
-      });
-    }
-    const payload = {
-      id: user.id,
-      role: user.role,
-    };
-
-    const token = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken(payload);
-    if (user.refreshToken.length === 5) {
-      user.refreshToken.shift();
-      user.refreshToken.push(refreshToken);
-    } else {
-      user.refreshToken.push(refreshToken);
-    }
-    await user.save();
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-      maxAge: 15 * 24 * 60 * 60 * 1000,
-    });
-    res.status(200).json({
-      status: 1,
-      msg: "Login Successfull",
-      token,
-    });
-  } catch (error) {
-    res.status(500).json({
+exports.handleLogin = async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(400).json({
       status: 0,
-      msg: error.message,
+      msg: "Invalid email or password",
     });
   }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(400).json({
+      status: 0,
+      msg: "Incorrect Password",
+    });
+  }
+  const payload = {
+    id: user.id,
+    role: user.role,
+  };
+
+  const token = generateAccessToken(payload);
+  const refreshToken = generateRefreshToken(payload);
+
+  // Only allowed limited token
+  // if limit hits than the oldest token will be removed
+  const MAX_TOKENS = Number(process.env.MAX_REFRESH_TOKENS) || 5;
+
+  if (user.refreshToken.length === MAX_TOKENS) {
+    user.refreshToken.shift();
+    user.refreshToken.push(refreshToken);
+  } else {
+    user.refreshToken.push(refreshToken);
+  }
+  await user.save();
+
+  // Setting the cookies
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 15 * 24 * 60 * 60 * 1000,
+  });
+
+  //Sending the access token in response body
+  res.status(200).json({
+    status: 1,
+    msg: "Login Successfull",
+    token,
+  });
 };
 
-const handleLogoutUser = async (req, res) => {
+exports.handleLogoutUser = async (req, res) => {
   const { id } = req?.user?.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
@@ -161,29 +155,41 @@ const handleLogoutUser = async (req, res) => {
     return res.sendStatus(204);
   }
 
-  try {
-    await User.findOneAndUpdate(
-      { _id: id },
-      { $pull: { refreshToken: refreshToken } },
-    );
-  } catch (error) {
-    res.status(500).json({
-      status: 0,
-      msg: error.message,
-    });
-  }
+  await User.findOneAndUpdate(
+    { _id: id },
+    { $pull: { refreshToken: refreshToken } },
+  );
 
   res.clearCookie("refreshToken", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     sameSite: "none",
   });
   return res.sendStatus(204);
 };
 
-module.exports = {
-  handleLogin,
-  handleSignup,
-  handleLogoutUser,
-  handleGetUserById,
+exports.handleSubscribeNewLetter = async (req, res) => {
+  const { email } = req.query;
+  if (!email || email === "") {
+    return res.status(400).json({
+      status: 0,
+      msg: "Please provide email",
+    });
+  }
+
+  const user = await User.updateOne({ email });
+  console.log(user);
+
+  if (!user) {
+    return res.status(404).json({
+      status: 0,
+      msg: "User not found",
+    });
+  }
+
+  res.status(200).json({
+    status: 0,
+    msg: "Subscribed",
+    user,
+  });
 };

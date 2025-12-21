@@ -6,15 +6,15 @@ const {
   handleAddProductToCart,
   handleRemoveProductFromCart,
 } = require("../controllers/cart.controller");
-
+const asyncHandler = require("../utils/asyncHandler");
 const router = express.Router();
 
 router
   .route("/")
-  .get(authMiddleware, handleGetCartData)
-  .patch(authMiddleware, handleAddProductToCart)
-  .delete(authMiddleware, handleRemoveProductFromCart);
+  .get(authMiddleware, asyncHandler(handleGetCartData))
+  .patch(authMiddleware, asyncHandler(handleAddProductToCart))
+  .delete(authMiddleware, asyncHandler(handleRemoveProductFromCart));
 
-router.patch("/update", authMiddleware, handleUpdateCartQty);
+router.patch("/update", authMiddleware, asyncHandler(handleUpdateCartQty));
 
 module.exports = router;

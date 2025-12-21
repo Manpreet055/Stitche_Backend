@@ -33,11 +33,10 @@ app.use(cookieParser());
 app.use(helmet());
 app.use(
   cors({
-    origin: "http://localhost:5173", // frontend URL
-    credentials: true,
+    origin: [process.env.CORS_ORIGIN, "http://172.16.14.207:5173"], // cannot be '*'
+    credentials: true, // allow cookies/auth
   }),
 );
-
 // Routes prefixes
 app.use("/api", rateLimiter, coreRoute);
 app.use("/products", rateLimiter, productRoute);

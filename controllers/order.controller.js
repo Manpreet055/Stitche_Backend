@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Order = require("../models/order.model");
 
-const handleGetOrderDataById = async (req, res) => {
+exports.handleGetOrderDataById = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
@@ -10,29 +10,22 @@ const handleGetOrderDataById = async (req, res) => {
     });
   }
 
-  try {
-    const foundOrder = await Order.findById(id).lean();
+  const foundOrder = await Order.findById(id).lean();
 
-    if (!foundOrder) {
-      return res.status(404).json({
-        status: 0,
-        msg: "Order data not found",
-      });
-    }
-    res.status(200).json({
-      status: 1,
-      msg: "Data fetching Successful",
-      data: foundOrder,
-    });
-  } catch (error) {
-    res.status(500).json({
+  if (!foundOrder) {
+    return res.status(404).json({
       status: 0,
-      msg: error.message,
+      msg: "Order data not found",
     });
   }
+  res.status(200).json({
+    status: 1,
+    msg: "Data fetching Successful",
+    data: foundOrder,
+  });
 };
 
-const handleDeleteOrderById = async (req, res) => {
+exports.handleDeleteOrderById = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({
@@ -41,29 +34,18 @@ const handleDeleteOrderById = async (req, res) => {
     });
   }
 
-  try {
-    const deleteOrder = await Order.findByIdAndDelete(id);
+  const deleteOrder = await Order.findByIdAndDelete(id);
 
-    if (!deleteOrder) {
-      return res.status(404).json({
-        status: 0,
-        msg: "No order data found",
-      });
-    }
-
-    res.status(200).json({
-      status: 1,
-      msg: "Data deleted successfully.",
-      data: deleteOrder,
-    });
-  } catch (error) {
-    res.status(500).json({
+  if (!deleteOrder) {
+    return res.status(404).json({
       status: 0,
-      msg: error.message,
+      msg: "No order data found",
     });
   }
-};
-module.exports = {
-  handleGetOrderDataById,
-  handleDeleteOrderById,
+
+  res.status(200).json({
+    status: 1,
+    msg: "Data deleted successfully.",
+    data: deleteOrder,
+  });
 };

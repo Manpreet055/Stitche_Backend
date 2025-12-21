@@ -4,12 +4,12 @@ const {
   handleGetMessageDataById,
   handleDeleteMessageById,
 } = require("../controllers/inbox.controller");
-
+const asyncHandler = require("../utils/asyncHandler");
 const router = express.Router();
 
 router
   .route("/:id")
-  .get(handleGetMessageDataById)
-  .delete(handleDeleteMessageById);
+  .get(asyncHandler(handleGetMessageDataById))
+  .delete(asyncHandler(handleDeleteMessageById));
 
 module.exports = router;

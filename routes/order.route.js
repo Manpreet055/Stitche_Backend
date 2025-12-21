@@ -4,9 +4,12 @@ const {
   handleGetOrderDataById,
   handleDeleteOrderById,
 } = require("../controllers/order.controller");
-
+const asyncHandler = require("../utils/asyncHandler");
 const router = express.Router();
 
-router.route("/:id").get(handleGetOrderDataById).delete(handleDeleteOrderById);
+router
+  .route("/:id")
+  .get(asyncHandler(handleGetOrderDataById))
+  .delete(asyncHandler(handleDeleteOrderById));
 
 module.exports = router;

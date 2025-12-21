@@ -104,6 +104,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isSubscribed: {
+      type: Boolean,
+      default: false,
+    },
 
     isActive: {
       type: Boolean,
