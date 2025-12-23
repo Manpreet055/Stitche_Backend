@@ -47,63 +47,83 @@ exports.handleSignup = async (req, res) => {
     });
   }
 
-  // generating random Number
-  const randomPhoneNumber = Math.floor(1000000000 + Math.random() * 9000000000);
+  try {
+    // generating random Number
+    const randomPhoneNumber = Math.floor(
+      1000000000 + Math.random() * 9000000000,
+    );
 
-  // generating form data to pass schema validation
-  const formData = {
-    ...req.body,
-    username: (req.body?.fullname + "123").trim(),
-    cart: [],
-    profile: {
-      fullName: req.body?.fullname,
-      phone: randomPhoneNumber,
-    },
-  };
+    // generating form data to pass schema validation
+    const formData = {
+      ...req.body,
+      username: (req.body?.fullname + "123").trim(),
+      cart: [],
+      profile: {
+        fullName: req.body?.fullname,
+        phone: randomPhoneNumber,
+      },
+    };
 
-  // deleting the full name key from formdata
-  delete formData?.fullname;
+    // deleting the full name key from formdata
+    delete formData?.fullname;
 
-  const user = await User.create(formData);
+    const user = await User.create(formData);
+    if (!user) {
+      return res.status(409).json({
+        status: 0,
+        msg: "failed to create the user",
+      });
+    }
+    // creating payload to generate tokens
+    const payload = {
+      id: user.id,
+    };
+    const token = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+    user.refreshToken = [...user.refreshToken, refreshToken];
+    await user.save();
 
-  // creating payload to generate tokens
-  const payload = {
-    id: user.id,
-  };
-  const token = generateAccessToken(payload);
-  const refreshToken = generateRefreshToken(payload);
-  user.refreshToken = [...user.refreshToken, refreshToken];
-  await user.save();
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 15 * 24 * 60 * 60 * 1000,
+    });
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    maxAge: 15 * 24 * 60 * 60 * 1000,
-  });
-
-  res.status(201).json({
-    status: 1,
-    msg: "User Created",
-    token,
-  });
+    res.status(201).json({
+      status: 1,
+      msg: "User Created",
+      token,
+    });
+  } catch (error) {
+    if (error?.errorResponse?.code === 11000) {
+      return res.status(409).json({
+        status: 0,
+        msg: "Email or username already exist",
+      });
+    }
+    res.status(500).json({
+      status: 0,
+      msg: error.message,
+    });
+  }
 };
 
 exports.handleLogin = async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
   if (!user) {
-    return res.status(400).json({
+    return res.status(404).json({
       status: 0,
-      msg: "Invalid email or password",
+      msg: "User not found",
     });
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return res.status(400).json({
+    return res.status(401).json({
       status: 0,
-      msg: "Incorrect Password",
+      msg: "Incorrect login credentials",
     });
   }
   const payload = {

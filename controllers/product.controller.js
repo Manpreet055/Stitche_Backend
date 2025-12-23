@@ -4,7 +4,7 @@ const parseNumbers = require("../utils/parseNumber");
 const applyFilters = require("../utils/applyFilters");
 
 exports.handleGetProducts = async (req, res) => {
-  let { limit, page, sortingOrder, sortField, ...filters } = req.query;
+  let { limit, page, sortingOrder, sortField, price, ...filters } = req.query;
 
   filters = applyFilters(filters); // Parsing the filters into what mongoose want
 
@@ -14,12 +14,17 @@ exports.handleGetProducts = async (req, res) => {
   const length = await Product.countDocuments({
     ...filters,
     isFeatured: true,
+    price: { $lt: price ?? 1500 },
   });
   const totalPages = Math.ceil(length / limit); //Calculating totalPages and sending it to the frontend for ease
 
   const order = sortingOrder === "desc" ? -1 : 1;
 
-  const allProducts = await Product.find({ ...filters, isFeatured: true })
+  const allProducts = await Product.find({
+    ...filters,
+    isFeatured: true,
+    price: { $lt: price ?? 1500 },
+  })
     .sort(sortField ? { [sortField]: order } : { _id: 1 })
     .skip(skip)
     .limit(limit)

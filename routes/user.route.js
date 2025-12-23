@@ -16,7 +16,7 @@ const router = express.Router();
 router.route("/").get(authMiddleware, asyncHandler(handleGetUserById));
 router.post("/logout", authMiddleware, asyncHandler(handleLogoutUser));
 router.post("/login", asyncHandler(handleLogin));
-router.post("/signup", asyncHandler(handleSignup));
+router.post("/signup", handleSignup);
 router.post("/refresh-token", asyncHandler(getNewAccessToken));
 router.patch("/subscirbe", asyncHandler(handleSubscribeNewLetter));
 

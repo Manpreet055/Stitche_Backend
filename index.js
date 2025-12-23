@@ -20,6 +20,7 @@ const productRoute = require("./routes/product.route");
 
 const app = express();
 connectMongoDB();
+app.set("trust proxy", 1);
 
 // Initializing Middlewares
 app.use(
