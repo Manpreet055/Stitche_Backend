@@ -1,5 +1,6 @@
 const User = require("../models/user.model");
 const bcrypt = require("bcrypt");
+const uploadBuffer = require("../utils/uploadBuffer");
 const {
   generateAccessToken,
   generateRefreshToken,
@@ -211,5 +212,65 @@ exports.handleSubscribeNewLetter = async (req, res) => {
     status: 0,
     msg: "Subscribed",
     user,
+  });
+};
+
+exports.updateUserProfile = async (req, res) => {
+  const { id } = req?.user?.payload;
+  // Checking for invalid id
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      status: 0,
+      msg: "User Id is not valid",
+    });
+  }
+
+  const user = await User.findById(id);
+  if (!user) {
+    return res.status(404).json({
+      status: 0,
+      msg: "User not found",
+    });
+  }
+
+  const avatar = req.file;
+  if (avatar) {
+    const uploadedPic = await uploadBuffer(
+      // converting buffer into streams
+      avatar.buffer, // incoming file buffer provided by multer
+      `/users/profile-pics`, // Cloudinary folder name
+    );
+    user.profile.avatar = uploadedPic.secure_url;
+  }
+
+  // only allowed these fields to change
+  const allowedFields = [
+    "username",
+    "email",
+    "fullName",
+    "phone",
+    "street",
+    "city",
+    "country",
+    "postalCode",
+  ];
+
+  allowedFields.forEach((field) => {
+    if (field in req.body) {
+      if (["street", "city", "country", "postalCode"].includes(field)) {
+        user.profile.address[field] = req.body[field];
+      } else if (["username", "email"].includes(field)) {
+        user[field] = req.body[field];
+      } else if (["fullName", "phone"].includes(field)) {
+        user.profile[field] = req.body[field];
+      }
+    }
+  });
+
+  await user.save();
+
+  res.status(200).json({
+    status: 1,
+    msg: "Profile updated",
   });
 };
