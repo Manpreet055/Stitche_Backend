@@ -34,7 +34,7 @@ app.use(cookieParser());
 app.use(helmet());
 app.use(
   cors({
-    origin: [process.env.CORS_ORIGIN, "http://172.16.14.207:5173"], // cannot be '*'
+    origin: ["http://172.16.17.149:5173", process.env.CORS_ORIGIN],
     credentials: true, // allow cookies/auth
   }),
 );

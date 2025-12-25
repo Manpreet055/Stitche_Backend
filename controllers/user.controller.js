@@ -190,6 +190,14 @@ exports.handleLogoutUser = async (req, res) => {
 };
 
 exports.handleSubscribeNewLetter = async (req, res) => {
+  const { id } = req?.user?.payload;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      status: 0,
+      msg: "Id is not valid",
+    });
+  }
+
   const { email } = req.query;
   if (!email || email === "") {
     return res.status(400).json({
@@ -197,21 +205,21 @@ exports.handleSubscribeNewLetter = async (req, res) => {
       msg: "Please provide email",
     });
   }
+  const result = await User.findOneAndUpdate({ _id: id }, [
+    { $set: { isSubscribed: { $not: "$isSubscribed" } } },
+  ]);
 
-  const user = await User.updateOne({ email });
-  console.log(user);
-
-  if (!user) {
+  // updateOne returns an object, check matchedCount
+  if (result.matchedCount === 0) {
     return res.status(404).json({
       status: 0,
-      msg: "User not found",
+      msg: "User not found or email mismatch",
     });
   }
 
   res.status(200).json({
     status: 0,
     msg: "Subscribed",
-    user,
   });
 };
 
@@ -255,6 +263,15 @@ exports.updateUserProfile = async (req, res) => {
     "postalCode",
   ];
 
+  if (!user.profile.address) {
+    user.profile.address = {
+      street: "",
+      city: "",
+      country: "",
+      postalCode: "",
+    };
+  }
+
   allowedFields.forEach((field) => {
     if (field in req.body) {
       if (["street", "city", "country", "postalCode"].includes(field)) {
@@ -272,5 +289,6 @@ exports.updateUserProfile = async (req, res) => {
   res.status(200).json({
     status: 1,
     msg: "Profile updated",
+    user,
   });
 };

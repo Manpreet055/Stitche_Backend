@@ -19,12 +19,16 @@ router.post("/logout", authMiddleware, asyncHandler(handleLogoutUser));
 router.post("/login", asyncHandler(handleLogin));
 router.post("/signup", asyncHandler(handleSignup));
 router.post("/refresh-token", asyncHandler(getNewAccessToken));
-router.patch("/subscirbe", asyncHandler(handleSubscribeNewLetter));
+router.patch(
+  "/subscirbe",
+  authMiddleware,
+  asyncHandler(handleSubscribeNewLetter),
+);
 router.patch(
   "/update-profile",
   authMiddleware,
   handleProfileImage,
-  updateUserProfile,
+  asyncHandler(updateUserProfile),
 );
 
 module.exports = router;

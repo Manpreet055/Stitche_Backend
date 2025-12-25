@@ -62,7 +62,6 @@ const getNewAccessToken = async (req, res) => {
       user.refreshToken = user.refreshToken.filter(
         (token) => token !== refreshToken,
       );
-      console.log("token removed");
       await user.save();
     }
     res.status(403).json({ msg: "Invalid or expired refresh token" });

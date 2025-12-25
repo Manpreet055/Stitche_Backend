@@ -4,6 +4,12 @@ const asyncHandler = (fn) => {
       const results = await fn(req, res, next);
       return results;
     } catch (error) {
+      if (error?.errorResponse?.code === 11000) {
+        return res.status(409).json({
+          status: 0,
+          msg: "Email or username already exist",
+        });
+      }
       res.status(500).json({
         status: 0,
         msg: error.message,
