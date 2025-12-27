@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Order = require("../models/order.model");
+const User = require("../models/user.model");
 
 exports.handleGetOrderDataById = async (req, res) => {
   const { id } = req.params;
@@ -10,7 +11,7 @@ exports.handleGetOrderDataById = async (req, res) => {
     });
   }
 
-  const foundOrder = await Order.findById(id).lean();
+  const foundOrder = await Order.findById(id).populate("user");
 
   if (!foundOrder) {
     return res.status(404).json({
@@ -48,4 +49,64 @@ exports.handleDeleteOrderById = async (req, res) => {
     msg: "Data deleted successfully.",
     data: deleteOrder,
   });
+};
+
+exports.handlePlaceOrder = async (req, res) => {
+  const { id } = req?.user?.payload;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ status: 0, msg: "User Id is not valid" });
+  }
+
+  const orderData = req.body;
+  if (!orderData || !orderData.products) {
+    return res
+      .status(400)
+      .json({ status: 0, msg: "Please provide Orders Data" });
+  }
+
+  // using session to process db changes simultenously
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+
+    // Map product IDs to build products array
+    const fetchProductIds = orderData.products.map((p) => p.product);
+    orderData.products = fetchProductIds;
+
+    orderData.user = id; //linking User id in order doc
+
+    const newOrder = await Order.create([orderData], { session }); // new order
+
+    // 3. updating User document
+    await User.findByIdAndUpdate(
+      id,
+      {
+        $push: { orders: newOrder[0]._id },
+        $set: { cart: [] },
+      },
+      { session, new: true },
+    );
+
+    // saving changes
+    await session.commitTransaction();
+
+    // success response
+    res.status(200).json({
+      status: 1,
+      msg: "Order placed !!",
+      order: newOrder[0],
+    });
+  } catch (error) {
+    // 4. Rollback changes
+    await session.abortTransaction();
+    res.status(500).json({
+      status: 0,
+      msg: "Transaction failed: " + error.message,
+    });
+  } finally {
+    //  close the session
+    session.endSession();
+  }
 };

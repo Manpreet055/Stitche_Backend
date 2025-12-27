@@ -24,7 +24,7 @@ exports.handleGetUserById = async (req, res) => {
     });
   }
 
-  const user = await User.findById(id).populate("cart.product");
+  const user = await User.findById(id);
 
   if (!user) {
     return res.status(404).json({

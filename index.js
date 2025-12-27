@@ -44,7 +44,7 @@ app.use("/products", rateLimiter, productRoute);
 app.use("/users", rateLimiter, userRoute);
 app.use("/cart", rateLimiter, cartRoute);
 app.use("/inbox", rateLimiter, inboxRoute);
-app.use("/order", rateLimiter, orderRoute);
+app.use("/orders", rateLimiter, orderRoute);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

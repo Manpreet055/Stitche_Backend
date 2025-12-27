@@ -8,13 +8,8 @@ const paymentSchema = new mongoose.Schema(
       required: true,
     },
     transactionId: {
-      type: String,
+      type: Number,
       required: true,
-    },
-    status: {
-      type: String,
-      enum: ["pending", "success", "failed"],
-      default: "pending",
     },
   },
   { _id: false },
@@ -22,7 +17,7 @@ const paymentSchema = new mongoose.Schema(
 
 const shippingSchema = new mongoose.Schema(
   {
-    address: String,
+    street: String,
     city: String,
     postalCode: String,
     country: String,
@@ -45,7 +40,6 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
-      max: 999,
     },
     discount: {
       type: Number,
@@ -61,7 +55,7 @@ const orderSchema = new mongoose.Schema(
     },
     orderStatus: {
       type: String,
-      enum: ["pending", "shipped", "delivered"],
+      enum: ["cancelled", "confirmed", "delivered", "pending", "shipped"],
       default: "pending",
     },
     user: {
