@@ -110,3 +110,44 @@ exports.handlePlaceOrder = async (req, res) => {
     session.endSession();
   }
 };
+
+exports.handleGetOrderHistory = async (req, res) => {
+  const { id } = req?.user?.payload;
+
+  let { limit, page } = req.query;
+  limit = parseInt(limit) || 10;
+  page = parseInt(page) || 1;
+  const skip = (page - 1) * limit;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ status: 0, msg: "User Id is not valid" });
+  }
+  const userRecord = await User.findById(id, "orders");
+  const totalOrdersCount = userRecord?.orders?.length || 0;
+
+  // finding orders and applying projection
+  const orders = await User.findById(id, "orders").populate({
+    path: "orders",
+    select: "totalAmount shipping.trackingId orderStatus createdAt user",
+    options: {
+      skip: skip,
+      limit: limit,
+    },
+  });
+
+  if (!orders) {
+    return res.status(404).json({
+      status: 0,
+      msg: "Orders history not found",
+    });
+  }
+
+  const totalPages = Math.ceil(totalOrdersCount / limit);
+
+  res.status(200).json({
+    status: 1,
+    msg: "Found Orders",
+    orders,
+    totalPages,
+  });
+};

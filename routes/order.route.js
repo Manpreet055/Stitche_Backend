@@ -4,6 +4,7 @@ const {
   handleGetOrderDataById,
   handleDeleteOrderById,
   handlePlaceOrder,
+  handleGetOrderHistory,
 } = require("../controllers/order.controller");
 const asyncHandler = require("../utils/asyncHandler");
 const router = express.Router();
@@ -13,6 +14,9 @@ router
   .get(asyncHandler(handleGetOrderDataById))
   .delete(asyncHandler(handleDeleteOrderById));
 
-router.post("/", authMiddleware, handlePlaceOrder);
+router
+  .route("/")
+  .get(authMiddleware, asyncHandler(handleGetOrderHistory))
+  .post(authMiddleware, handlePlaceOrder);
 
 module.exports = router;
