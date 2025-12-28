@@ -34,7 +34,11 @@ app.use(cookieParser());
 app.use(helmet());
 app.use(
   cors({
-    origin: ["http://172.16.17.149:5173", process.env.CORS_ORIGIN],
+    origin: [
+      "http://172.16.17.149:5173",
+      "http://localhost:5174/",
+      process.env.CORS_ORIGIN,
+    ],
     credentials: true, // allow cookies/auth
   }),
 );

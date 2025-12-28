@@ -11,18 +11,21 @@ exports.handleGetOrderDataById = async (req, res) => {
     });
   }
 
-  const foundOrder = await Order.findById(id).populate("user");
+  const orders = await Order.findById(id)
+    .populate("products.product")
+    .populate("user", "profile.fullName");
 
-  if (!foundOrder) {
+  if (!orders) {
     return res.status(404).json({
       status: 0,
       msg: "Order data not found",
     });
   }
+
   res.status(200).json({
     status: 1,
     msg: "Data fetching Successful",
-    data: foundOrder,
+    orders,
   });
 };
 
@@ -70,10 +73,6 @@ exports.handlePlaceOrder = async (req, res) => {
 
   try {
     session.startTransaction();
-
-    // Map product IDs to build products array
-    const fetchProductIds = orderData.products.map((p) => p.product);
-    orderData.products = fetchProductIds;
 
     orderData.user = id; //linking User id in order doc
 
@@ -125,7 +124,7 @@ exports.handleGetOrderHistory = async (req, res) => {
   const userRecord = await User.findById(id, "orders");
   const totalOrdersCount = userRecord?.orders?.length || 0;
 
-  // finding orders and applying projection
+  // finding orders and applying pmethodrojection
   const orders = await User.findById(id, "orders").populate({
     path: "orders",
     select: "totalAmount shipping.trackingId orderStatus createdAt user",

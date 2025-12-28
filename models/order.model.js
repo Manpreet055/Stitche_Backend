@@ -27,21 +27,42 @@ const shippingSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const productsScheme = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+    qty: {
+      type: Number,
+      required: true,
+      default: 1,
+    },
+  },
+  { _id: false },
+);
 const orderSchema = new mongoose.Schema(
   {
-    products: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Product",
-        required: true,
-      },
-    ],
+    products: [productsScheme],
     totalAmount: {
       type: Number,
       required: true,
       min: 0,
     },
     discount: {
+      type: Number,
+      min: 0,
+    },
+    deliveryFee: {
+      type: Number,
+      min: 0,
+    },
+    priceAfterDiscount: {
+      type: Number,
+      min: 0,
+    },
+    subTotal: {
       type: Number,
       min: 0,
     },

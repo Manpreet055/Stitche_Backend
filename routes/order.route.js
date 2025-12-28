@@ -11,7 +11,7 @@ const router = express.Router();
 
 router
   .route("/:id")
-  .get(asyncHandler(handleGetOrderDataById))
+  .get(authMiddleware, asyncHandler(handleGetOrderDataById))
   .delete(asyncHandler(handleDeleteOrderById));
 
 router
