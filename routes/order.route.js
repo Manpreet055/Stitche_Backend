@@ -5,6 +5,7 @@ const {
   handleDeleteOrderById,
   handlePlaceOrder,
   handleGetOrderHistory,
+  handleOrderCancellation,
 } = require("../controllers/order.controller");
 const asyncHandler = require("../utils/asyncHandler");
 const router = express.Router();
@@ -12,6 +13,7 @@ const router = express.Router();
 router
   .route("/:id")
   .get(authMiddleware, asyncHandler(handleGetOrderDataById))
+  .patch(authMiddleware, asyncHandler(handleOrderCancellation))
   .delete(asyncHandler(handleDeleteOrderById));
 
 router

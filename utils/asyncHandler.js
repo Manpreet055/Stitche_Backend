@@ -10,7 +10,7 @@ const asyncHandler = (fn) => {
           msg: "Email or username already exist",
         });
       }
-      res.status(500).json({
+      res.status(error.statusCode || 500).json({
         status: 0,
         msg: error.message,
       });

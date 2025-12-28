@@ -30,28 +30,55 @@ exports.handleGetOrderDataById = async (req, res) => {
 };
 
 exports.handleDeleteOrderById = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; //orderId
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Order id is not valid",
-    });
+    const error = new Error("Order id is not valid");
+    error.statusCode = 404;
+    throw error;
   }
 
-  const deleteOrder = await Order.findByIdAndDelete(id);
+  // using sessions
+  const session = await mongoose.startSession();
 
-  if (!deleteOrder) {
-    return res.status(404).json({
-      status: 0,
-      msg: "No order data found",
+  try {
+    session.startTransaction();
+    // finding order and updating the user document
+    const findOrder = await Order.findById(id).session(session);
+
+    if (!findOrder) {
+      await session.abortTransaction();
+      session.endSession();
+      const error = new Error("Order not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await User.findByIdAndUpdate(
+      { _id: findOrder?.user },
+      {
+        $pull: { orders: id },
+      },
+      { session },
+    );
+
+    // deleting the order id from orders collection
+    const deleteOrder = await Order.findByIdAndDelete(id, { session });
+    await session.commitTransaction();
+
+    res.status(200).json({
+      status: 1,
+      msg: "Data deleted successfully.",
+      deleteOrder,
     });
+  } catch (error) {
+    session.abortTransaction();
+    res.status(error.statusCode || 500).json({
+      status: 0,
+      msg: "Transaction failed: " + error.message,
+    });
+  } finally {
+    session.endSession();
   }
-
-  res.status(200).json({
-    status: 1,
-    msg: "Data deleted successfully.",
-    data: deleteOrder,
-  });
 };
 
 exports.handlePlaceOrder = async (req, res) => {
@@ -98,7 +125,7 @@ exports.handlePlaceOrder = async (req, res) => {
       order: newOrder[0],
     });
   } catch (error) {
-    // 4. Rollback changes
+    //rollback changes on failure
     await session.abortTransaction();
     res.status(500).json({
       status: 0,
@@ -148,5 +175,31 @@ exports.handleGetOrderHistory = async (req, res) => {
     msg: "Found Orders",
     orders,
     totalPages,
+  });
+};
+
+exports.handleOrderCancellation = async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      status: 0,
+      msg: "Order id is not valid",
+    });
+  }
+
+  const cancelOrder = await Order.findByIdAndUpdate(id, {
+    $set: { orderStatus: "cancelled" },
+  });
+
+  if (!cancelOrder) {
+    return res.status(404).json({
+      status: 0,
+      msg: "Orders history not found",
+    });
+  }
+
+  res.status(200).json({
+    status: 0,
+    msg: "Order Cancelled",
   });
 };
