@@ -1,22 +1,17 @@
 const mongoose = require("mongoose");
 const Inbox = require("../models/message.model");
-
+const User = require("../models/user.model");
+const ApiError = require("../utils/ApiError");
 exports.handleGetMessageDataById = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Message id is not valid",
-    });
+    throw new ApiError("Message id is not valid", 400);
   }
 
   const foundMessages = await Inbox.findById(id).lean();
 
   if (!foundMessages) {
-    return res.status(404).json({
-      status: 0,
-      msg: "Messages not found",
-    });
+    throw new ApiError("Message not found", 404);
   }
   res.status(200).json({
     status: 1,
@@ -26,26 +21,99 @@ exports.handleGetMessageDataById = async (req, res) => {
 };
 
 exports.handleDeleteMessageById = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; //messageId
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Message id is not valid",
-    });
+    throw new ApiError("Message id is not valid", 400);
   }
 
-  const deleteMessage = await Inbox.findByIdAndDelete(id);
+  // using sessions
+  const session = await mongoose.startSession();
 
-  if (!deleteMessage) {
-    return res.status(404).json({
-      status: 0,
-      msg: "No Message found",
+  try {
+    session.startTransaction();
+
+    // finding Message and updating the user document
+    const findMessage = await Inbox.findById(id).session(session);
+
+    if (!findMessage) {
+      throw new ApiError("Message not found", 404);
+    }
+
+    await User.findByIdAndUpdate(
+      { _id: findMessage?.user },
+      {
+        $pull: { messages: id },
+      },
+      { session },
+    );
+
+    // deleting the Message id from orders collection
+    const deleteMessage = await Inbox.findByIdAndDelete(id, { session });
+    await session.commitTransaction();
+
+    res.status(200).json({
+      status: 1,
+      msg: "Message deleted successfully.",
+      deleteMessage,
     });
+  } catch (error) {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    res.status(error.statusCode || 500).json({
+      status: 0,
+      msg: "Transaction failed: " + error.message,
+    });
+  } finally {
+    await session.endSession();
+  }
+};
+
+exports.handleCreateMessage = async (req, res) => {
+  const { id } = req?.user?.payload;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError("User is is not valid", 400);
   }
 
-  res.status(200).json({
-    status: 1,
-    msg: "Data deleted successfully.",
-    data: deleteMessage,
-  });
+  const message = req.body;
+  if (!message || Object.keys(message).length === 0) {
+    throw new ApiError("Please provide message details");
+  }
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    // creating new messages
+    const newMessage = await Inbox.create([message], { session });
+    if (!newMessage) {
+      throw new ApiError("Message is not created..", 400);
+    }
+
+    //inserting message Id into user Document
+    await User.findByIdAndUpdate(
+      id,
+      {
+        $push: { messages: newMessage[0]._id },
+      },
+      { session },
+    );
+
+    // saving transactions and sending response
+    await session.commitTransaction();
+    res.status(201).json({
+      status: 1,
+      msg: "Message Created",
+      newMessage,
+    });
+  } catch (error) {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    res.status(error.statusCode || 500).json({
+      status: 0,
+      msg: error.message,
+    });
+  } finally {
+    await session.endSession();
+  }
 };
