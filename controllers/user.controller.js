@@ -95,6 +95,7 @@ exports.handleSignup = async (req, res) => {
       status: 1,
       msg: "User Created",
       token,
+      user,
     });
   } catch (error) {
     if (error?.errorResponse?.code === 11000) {
@@ -112,7 +113,7 @@ exports.handleSignup = async (req, res) => {
 
 exports.handleLogin = async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).populate("cart.product");
   if (!user) {
     return res.status(404).json({
       status: 0,
@@ -160,6 +161,7 @@ exports.handleLogin = async (req, res) => {
     status: 1,
     msg: "Login Successfull",
     token,
+    user,
   });
 };
 
