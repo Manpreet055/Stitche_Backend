@@ -14,7 +14,7 @@ router
   .route("/:id")
   .get(authMiddleware, asyncHandler(handleGetOrderDataById))
   .patch(authMiddleware, asyncHandler(handleOrderCancellation))
-  .delete(asyncHandler(handleDeleteOrderById));
+  .delete(authMiddleware, asyncHandler(handleDeleteOrderById));
 
 router
   .route("/")

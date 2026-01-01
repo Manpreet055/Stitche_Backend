@@ -1,14 +1,12 @@
 const mongoose = require("mongoose");
 const Order = require("../models/order.model");
 const User = require("../models/user.model");
+const ApiError = require("../utils/ApiError");
 
 exports.handleGetOrderDataById = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Order id is not valid",
-    });
+    throw new ApiError("Order id is not valid", 400);
   }
 
   const orders = await Order.findById(id)
@@ -16,12 +14,8 @@ exports.handleGetOrderDataById = async (req, res) => {
     .populate("user", "profile.fullName");
 
   if (!orders) {
-    return res.status(404).json({
-      status: 0,
-      msg: "Order data not found",
-    });
+    throw new ApiError("Order not found", 404);
   }
-
   res.status(200).json({
     status: 1,
     msg: "Data fetching Successful",
@@ -32,25 +26,19 @@ exports.handleGetOrderDataById = async (req, res) => {
 exports.handleDeleteOrderById = async (req, res) => {
   const { id } = req.params; //orderId
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    const error = new Error("Order id is not valid");
-    error.statusCode = 404;
-    throw error;
+    throw new ApiError("Order id is not valid", 400);
   }
 
   // using sessions
   const session = await mongoose.startSession();
-
   try {
     session.startTransaction();
-    // finding order and updating the user document
     const findOrder = await Order.findById(id).session(session);
 
     if (!findOrder) {
       await session.abortTransaction();
       session.endSession();
-      const error = new Error("Order not found");
-      error.statusCode = 404;
-      throw error;
+      throw new ApiError("Order not found", 404);
     }
 
     await User.findByIdAndUpdate(
@@ -85,27 +73,20 @@ exports.handlePlaceOrder = async (req, res) => {
   const { id } = req?.user?.payload;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ status: 0, msg: "User Id is not valid" });
+    throw new ApiError("User Id is not valid", 400);
   }
-
   const orderData = req.body;
   if (!orderData || !orderData.products) {
-    return res
-      .status(400)
-      .json({ status: 0, msg: "Please provide Orders Data" });
+    throw new ApiError("Please provide Orders Data", 400);
   }
 
-  // using session to process db changes simultenously
+  // using session
   const session = await mongoose.startSession();
-
   try {
     session.startTransaction();
-
     orderData.user = id; //linking User id in order doc
-
     const newOrder = await Order.create([orderData], { session }); // new order
 
-    // 3. updating User document
     await User.findByIdAndUpdate(
       id,
       {
@@ -115,9 +96,7 @@ exports.handlePlaceOrder = async (req, res) => {
       { session, new: true },
     );
 
-    // saving changes
-    await session.commitTransaction();
-
+    await session.commitTransaction(); // saving changes
     // success response
     res.status(200).json({
       status: 1,
@@ -144,10 +123,10 @@ exports.handleGetOrderHistory = async (req, res) => {
   limit = parseInt(limit) || 10;
   page = parseInt(page) || 1;
   const skip = (page - 1) * limit;
-
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ status: 0, msg: "User Id is not valid" });
+    throw new ApiError("User Id is not valid", 400);
   }
+
   const userRecord = await User.findById(id, "orders");
   const totalOrdersCount = userRecord?.orders?.length || 0;
 
@@ -162,14 +141,9 @@ exports.handleGetOrderHistory = async (req, res) => {
   });
 
   if (!orders) {
-    return res.status(404).json({
-      status: 0,
-      msg: "Orders history not found",
-    });
+    throw new ApiError("Orders history not found", 404);
   }
-
   const totalPages = Math.ceil(totalOrdersCount / limit);
-
   res.status(200).json({
     status: 1,
     msg: "Found Orders",
@@ -181,10 +155,7 @@ exports.handleGetOrderHistory = async (req, res) => {
 exports.handleOrderCancellation = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Order id is not valid",
-    });
+    throw new ApiError("Order id is not valid", 400);
   }
 
   const cancelOrder = await Order.findByIdAndUpdate(id, {
@@ -192,10 +163,7 @@ exports.handleOrderCancellation = async (req, res) => {
   });
 
   if (!cancelOrder) {
-    return res.status(404).json({
-      status: 0,
-      msg: "Orders history not found",
-    });
+    throw new ApiError("Order history not found", 404);
   }
 
   res.status(200).json({

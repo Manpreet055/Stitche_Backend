@@ -2,6 +2,7 @@ const Product = require("../models/product.model");
 const uploadBuffer = require("../utils/uploadBuffer");
 const parseNumbers = require("../utils/parseNumber");
 const applyFilters = require("../utils/applyFilters");
+const ApiError = require("../utils/ApiError");
 
 exports.handleGetProducts = async (req, res) => {
   let { limit, page, sortingOrder, sortField, price, ...filters } = req.query;
@@ -41,10 +42,10 @@ exports.handleGetProducts = async (req, res) => {
 exports.handleToggleFeatured = async (req, res) => {
   const { isFeatured, _id } = req.body;
   if (!_id || typeof isFeatured === "undefined") {
-    return res.status(400).json({
-      status: 0,
-      msg: "Please provide all details to updated the featured status ",
-    });
+    throw new ApiError(
+      "Please provide all details to updated the featured status ",
+      400,
+    );
   }
   const updateFeaturedStatus = await Product.findByIdAndUpdate(
     _id,
@@ -63,12 +64,12 @@ exports.handleUpdateProduct = async (req, res) => {
   const { id } = req.params;
 
   if (!id) {
-    return res.status(400).json({ status: 0, msg: "Product ID required" });
+    throw new ApiError("Product ID required", 400);
   }
 
   const product = await Product.findById(id);
   if (!product) {
-    return res.status(404).json({ status: 0, msg: "Product not found" });
+    throw new ApiError("Product not found", 404);
   }
 
   // PREPARE OLD VALUES
@@ -211,10 +212,7 @@ exports.handleCreateProduct = async (req, res) => {
 exports.handleProductSearch = async (req, res) => {
   const { query, limit } = req.query;
   if (!query) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Search query is required",
-    });
+    throw new ApiError("Search query is required", 400);
   }
 
   const results = await Product.aggregate([

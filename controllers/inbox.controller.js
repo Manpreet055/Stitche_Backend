@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Inbox = require("../models/message.model");
 const User = require("../models/user.model");
 const ApiError = require("../utils/ApiError");
+
 exports.handleGetMessageDataById = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -9,7 +10,6 @@ exports.handleGetMessageDataById = async (req, res) => {
   }
 
   const foundMessages = await Inbox.findById(id).lean();
-
   if (!foundMessages) {
     throw new ApiError("Message not found", 404);
   }
@@ -28,13 +28,10 @@ exports.handleDeleteMessageById = async (req, res) => {
 
   // using sessions
   const session = await mongoose.startSession();
-
   try {
     session.startTransaction();
 
-    // finding Message and updating the user document
     const findMessage = await Inbox.findById(id).session(session);
-
     if (!findMessage) {
       throw new ApiError("Message not found", 404);
     }
@@ -47,7 +44,6 @@ exports.handleDeleteMessageById = async (req, res) => {
       { session },
     );
 
-    // deleting the Message id from orders collection
     const deleteMessage = await Inbox.findByIdAndDelete(id, { session });
     await session.commitTransaction();
 
@@ -82,14 +78,10 @@ exports.handleCreateMessage = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
-
-    // creating new messages
     const newMessage = await Inbox.create([message], { session });
     if (!newMessage) {
       throw new ApiError("Message is not created..", 400);
     }
-
-    //inserting message Id into user Document
     await User.findByIdAndUpdate(
       id,
       {

@@ -10,28 +10,19 @@ const ApiError = require("../utils/ApiError");
 
 exports.handleGetUserById = async (req, res) => {
   if (!req.user || !req.user.payload?.id) {
-    return res.status(401).json({
-      status: 0,
-      msg: "Unauthorized",
-    });
+    throw new ApiError("Unauthorized", 401);
   }
 
   // Valiidating the Id
   const { id } = req.user.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Id is not valid",
-    });
+    throw new ApiError("Id is not valid", 400);
   }
 
   const user = await User.findById(id);
 
   if (!user) {
-    return res.status(404).json({
-      status: 0,
-      msg: "User not found",
-    });
+    throw new ApiError("User not found", 404);
   }
 
   res.status(200).json({
@@ -43,91 +34,60 @@ exports.handleGetUserById = async (req, res) => {
 
 exports.handleSignup = async (req, res) => {
   if (!req.body) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Please Provide Signup Data",
-    });
+    throw new ApiError("Please Provide Signup Data", 400);
   }
 
-  try {
-    // generating random Number
-    const randomPhoneNumber = Math.floor(
-      1000000000 + Math.random() * 9000000000,
-    );
+  // generating form data to pass schema validation
+  const formData = {
+    ...req.body,
+    username: (req.body?.fullname + "123").trim(),
+    cart: [],
+    profile: {
+      fullName: req.body?.fullname,
+      phone: Math.floor(1000000000 + Math.random() * 9000000000), // random number
+    },
+  };
 
-    // generating form data to pass schema validation
-    const formData = {
-      ...req.body,
-      username: (req.body?.fullname + "123").trim(),
-      cart: [],
-      profile: {
-        fullName: req.body?.fullname,
-        phone: randomPhoneNumber,
-      },
-    };
-
-    // deleting the full name key from formdata
-    delete formData?.fullname;
-
-    const user = await User.create(formData);
-    if (!user) {
-      return res.status(409).json({
-        status: 0,
-        msg: "failed to create the user",
-      });
-    }
-    // creating payload to generate tokens
-    const payload = {
-      id: user.id,
-    };
-    const token = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken(payload);
-    user.refreshToken = [...user.refreshToken, refreshToken];
-    await user.save();
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 15 * 24 * 60 * 60 * 1000,
-    });
-
-    res.status(201).json({
-      status: 1,
-      msg: "User Created",
-      token,
-      user,
-    });
-  } catch (error) {
-    if (error?.errorResponse?.code === 11000) {
-      return res.status(409).json({
-        status: 0,
-        msg: "Email or username already exist",
-      });
-    }
-    res.status(500).json({
-      status: 0,
-      msg: error.message,
-    });
+  delete formData?.fullname; // deleting the full name key from formdata
+  const user = await User.create(formData);
+  if (!user) {
+    throw new ApiError("failed to create the user", 409);
   }
+
+  // creating payload to generate tokens
+  const payload = {
+    id: user.id,
+  };
+  const token = generateAccessToken(payload);
+  const refreshToken = generateRefreshToken(payload);
+  user.refreshToken = [...user.refreshToken, refreshToken];
+  await user.save();
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 15 * 24 * 60 * 60 * 1000,
+  });
+
+  res.status(201).json({
+    status: 1,
+    msg: "User Created",
+    token,
+    user,
+  });
 };
 
 exports.handleLogin = async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email }).populate("cart.product");
   if (!user) {
-    return res.status(404).json({
-      status: 0,
-      msg: "User not found",
-    });
+    throw new ApiError("User not found", 404);
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return res.status(401).json({
-      status: 0,
-      msg: "Incorrect login credentials",
-    });
+    throw new ApiError("Incorrect login credentials", 401);
   }
   const payload = {
     id: user.id,
@@ -169,21 +129,15 @@ exports.handleLogin = async (req, res) => {
 exports.handleLogoutUser = async (req, res) => {
   const { id } = req?.user?.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Id is not valid",
-    });
+    throw new ApiError("Id is not valid", 400);
   }
+
   const refreshToken = req.cookies?.refreshToken;
   if (!refreshToken) {
     return res.sendStatus(204);
   }
 
-  await User.findOneAndUpdate(
-    { _id: id },
-    { $pull: { refreshToken: refreshToken } },
-  );
-
+  await User.findByIdAndUpdate(id, { $pull: { refreshToken: refreshToken } });
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: true,
@@ -195,19 +149,13 @@ exports.handleLogoutUser = async (req, res) => {
 exports.handleSubscribeNewLetter = async (req, res) => {
   const { id } = req?.user?.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Id is not valid",
-    });
+    throw new ApiError("Id is not valid", 400);
   }
-
   const { email } = req.query;
   if (!email || email === "") {
-    return res.status(400).json({
-      status: 0,
-      msg: "Please provide email",
-    });
+    throw new ApiError("Please provide email", 400);
   }
+
   const result = await User.findOneAndUpdate({ _id: id, email: email }, [
     { $set: { isSubscribed: { $not: "$isSubscribed" } } },
   ]);
@@ -226,18 +174,12 @@ exports.updateUserProfile = async (req, res) => {
   const { id } = req?.user?.payload;
   // Checking for invalid id
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "User Id is not valid",
-    });
+    throw new ApiError("User id is not valid", 400);
   }
 
   const user = await User.findById(id);
   if (!user) {
-    return res.status(404).json({
-      status: 0,
-      msg: "User not found",
-    });
+    throw new ApiError("User not found", 404);
   }
 
   const avatar = req.file;

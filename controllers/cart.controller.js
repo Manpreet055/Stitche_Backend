@@ -1,23 +1,16 @@
 const User = require("../models/user.model");
 const mongoose = require("mongoose");
+const ApiError = require("../utils/ApiError");
 
 exports.handleGetCartData = async (req, res) => {
   // Validating the UserId first
   const { id } = req?.user?.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "User Id is not valid",
-    });
+    throw new ApiError("User Id is not valid", 400);
   }
-
   const user = await User.findById(id).populate("cart.product");
-
   if (!user) {
-    return res.status(404).json({
-      status: 0,
-      msg: "User not found",
-    });
+    throw new ApiError("User not found", 404);
   }
   res.status(200).json({
     status: 1,
@@ -27,41 +20,36 @@ exports.handleGetCartData = async (req, res) => {
 };
 
 exports.handleAddProductToCart = async (req, res) => {
-  try {
-    const { id } = req.user?.payload;
-    const { product, qty } = req.body;
+  const { id } = req.user?.payload;
+  const { product, qty } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ status: 0, msg: "User Id is not valid" });
-    }
-
-    let user = await User.findOneAndUpdate(
-      { _id: id, "cart.product": product },
-      { $inc: { "cart.$.qty": qty || 1 } },
-      { new: true, runValidators: true },
-    ).populate("cart.product");
-
-    //if user is null, it means the product wasn't in the cart
-    if (!user) {
-      user = await User.findByIdAndUpdate(
-        id,
-        { $push: { cart: { product, qty } } },
-        { new: true, runValidators: true }, // Added new: true to get updated data
-      ).populate("cart.product");
-    }
-
-    if (!user) {
-      return res.status(404).json({ status: 0, msg: "User not found" });
-    }
-
-    return res.status(200).json({
-      status: 1,
-      msg: "Cart updated",
-      cart: user.cart,
-    });
-  } catch (error) {
-    return res.status(500).json({ status: 0, msg: error.message });
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError("User Id is not valid", 400);
   }
+
+  let user = await User.findOneAndUpdate(
+    { _id: id, "cart.product": product },
+    { $inc: { "cart.$.qty": qty || 1 } },
+    { new: true, runValidators: true },
+  ).populate("cart.product");
+
+  //if user is null, it means the product wasn't in the cart
+  if (!user) {
+    user = await User.findByIdAndUpdate(
+      id,
+      { $push: { cart: { product, qty } } },
+      { new: true, runValidators: true }, // Added new: true to get updated data
+    ).populate("cart.product");
+  }
+
+  if (!user) {
+    throw new ApiError("User not found", 404);
+  }
+  return res.status(200).json({
+    status: 1,
+    msg: "Cart updated",
+    cart: user.cart,
+  });
 };
 
 exports.handleRemoveProductFromCart = async (req, res) => {
@@ -105,10 +93,7 @@ exports.handleUpdateCartQty = async (req, res) => {
   const { product, qty } = req.body;
   const { id } = req.user.payload;
   if (!mongoose.Types.ObjectId.isValid(id) || !product) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Please Provide Product and User ID",
-    });
+    throw new ApiError("User Id is not valid", 400);
   }
 
   if (!qty || qty <= 0) {

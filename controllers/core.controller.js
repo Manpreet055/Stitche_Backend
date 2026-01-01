@@ -4,6 +4,7 @@ const Order = require("../models/order.model");
 const validateSchema = require("../utils/validateSchema");
 const applyFilters = require("../utils/applyFilters");
 const mongoose = require("mongoose");
+const ApiError = require("../utils/ApiError");
 
 exports.handleGetAllData = async (req, res) => {
   const { schema } = req.params;
@@ -38,10 +39,7 @@ exports.handleGetAllData = async (req, res) => {
 exports.handleGetDataById = async (req, res) => {
   const { id, schema } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Id is not valid",
-    });
+    throw new ApiError("Id is not valid", 400);
   }
 
   const selectedSchema = validateSchema(schema);
@@ -49,10 +47,7 @@ exports.handleGetDataById = async (req, res) => {
   const foundData = await selectedSchema.findById(id).lean();
 
   if (!foundData) {
-    return res.status(404).json({
-      status: 0,
-      msg: "Data not found",
-    });
+    throw new ApiError("Data not found", 404);
   }
   res.status(200).json({
     status: 1,
@@ -64,21 +59,14 @@ exports.handleGetDataById = async (req, res) => {
 exports.handleDeleteDataById = async (req, res) => {
   const { id, schema } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Id is not valid",
-    });
+    throw new ApiError("Id is not valid", 400);
   }
 
   const selectedSchema = validateSchema(schema);
-
   const deleteData = await selectedSchema.findByIdAndDelete(id);
 
   if (!deleteData) {
-    return res.status(404).json({
-      status: 0,
-      msg: "No data found",
-    });
+    throw new ApiError("No data found", 404);
   }
 
   res.status(200).json({
@@ -91,10 +79,7 @@ exports.handleDeleteDataById = async (req, res) => {
 exports.handleSearch = async (req, res) => {
   const { query } = req.query;
   if (!query) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Search query is required",
-    });
+    throw new ApiError("Search query is required", 400);
   }
 
   const searchConfig = [

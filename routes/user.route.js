@@ -13,6 +13,7 @@ const {
   authMiddleware,
 } = require("../middlewares/auth.middleware");
 const { handleProfileImage } = require("../middlewares/multer.middleware");
+
 const router = express.Router();
 router.route("/").get(authMiddleware, asyncHandler(handleGetUserById));
 router.post("/logout", authMiddleware, asyncHandler(handleLogoutUser));
