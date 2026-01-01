@@ -6,6 +6,7 @@ const {
   generateRefreshToken,
 } = require("../middlewares/auth.middleware");
 const mongoose = require("mongoose");
+const ApiError = require("../utils/ApiError");
 
 exports.handleGetUserById = async (req, res) => {
   if (!req.user || !req.user.payload?.id) {
@@ -207,21 +208,17 @@ exports.handleSubscribeNewLetter = async (req, res) => {
       msg: "Please provide email",
     });
   }
-  const result = await User.findOneAndUpdate({ _id: id }, [
+  const result = await User.findOneAndUpdate({ _id: id, email: email }, [
     { $set: { isSubscribed: { $not: "$isSubscribed" } } },
   ]);
-
-  // updateOne returns an object, check matchedCount
-  if (result.matchedCount === 0) {
-    return res.status(404).json({
-      status: 0,
-      msg: "User not found or email mismatch",
-    });
+  if (!result) {
+    throw new ApiError("User not found or email mismatch", 404);
   }
 
   res.status(200).json({
     status: 0,
     msg: "Subscribed",
+    state: result?.isSubscribed,
   });
 };
 
