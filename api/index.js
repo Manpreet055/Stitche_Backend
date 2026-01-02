@@ -1,6 +1,6 @@
 require("dotenv").config();
 const port = process.env.PORT || 3000;
-const connectMongoDB = require("./config/connectMongoDB");
+const connectMongoDB = require("../config/connectMongoDB");
 
 //Middlewares
 const cors = require("cors");
@@ -8,15 +8,15 @@ const morgan = require("morgan");
 const express = require("express");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
-const rateLimiter = require("./middlewares/rateLimiter.middleware");
+const rateLimiter = require("../middlewares/rateLimiter.middleware");
 
 // All routes
-const coreRoute = require("./routes/core.route");
-const userRoute = require("./routes/user.route");
-const cartRoute = require("./routes/cart.route");
-const inboxRoute = require("./routes/inbox.route");
-const orderRoute = require("./routes/order.route");
-const productRoute = require("./routes/product.route");
+const coreRoute = require("../routes/core.route");
+const userRoute = require("../routes/user.route");
+const cartRoute = require("../routes/cart.route");
+const inboxRoute = require("../routes/inbox.route");
+const orderRoute = require("../routes/order.route");
+const productRoute = require("../routes/product.route");
 
 const app = express();
 connectMongoDB();
@@ -35,11 +35,11 @@ app.use(helmet());
 app.use(
   cors({
     origin: [
-      "http://172.16.17.149:5173",
-      "http://localhost:5174/",
+      "http://localhost:5174",
+      "http://localhost:5173", // Remove trailing slashes
       process.env.CORS_ORIGIN,
     ],
-    credentials: true, // allow cookies/auth
+    credentials: true,
   }),
 );
 // Routes prefixes
@@ -50,6 +50,7 @@ app.use("/cart", rateLimiter, cartRoute);
 app.use("/inbox", rateLimiter, inboxRoute);
 app.use("/orders", rateLimiter, orderRoute);
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+// app.listen(port, () => {
+//   console.log(`Server is running on port ${port}`);
+// });
+module.exports = app;

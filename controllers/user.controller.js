@@ -19,7 +19,9 @@ exports.handleGetUserById = async (req, res) => {
     throw new ApiError("Id is not valid", 400);
   }
 
-  const user = await User.findById(id);
+  const user = await User.findById(id, -"password -refreshToken").populate(
+    "cart.product",
+  );
 
   if (!user) {
     throw new ApiError("User not found", 404);
