@@ -19,9 +19,9 @@ exports.handleGetUserById = async (req, res) => {
     throw new ApiError("Id is not valid", 400);
   }
 
-  const user = await User.findById(id, -"password -refreshToken").populate(
-    "cart.product",
-  );
+  const user = await User.findById(id, -"password -refreshToken")
+    .populate("cart.product")
+    .lean();
 
   if (!user) {
     throw new ApiError("User not found", 404);
@@ -139,7 +139,9 @@ exports.handleLogoutUser = async (req, res) => {
     return res.sendStatus(204);
   }
 
-  await User.findByIdAndUpdate(id, { $pull: { refreshToken: refreshToken } });
+  await User.findByIdAndUpdate(id, {
+    $pull: { refreshToken: refreshToken },
+  }).lean();
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: true,
@@ -158,9 +160,15 @@ exports.handleSubscribeNewLetter = async (req, res) => {
     throw new ApiError("Please provide email", 400);
   }
 
-  const result = await User.findOneAndUpdate({ _id: id, email: email }, [
-    { $set: { isSubscribed: { $not: "$isSubscribed" } } },
-  ]);
+  const result = await User.findOneAndUpdate(
+    { _id: id, email: email },
+    [{ $set: { isSubscribed: { $not: "$isSubscribed" } } }],
+    {
+      new: true, // Returns the document AFTER the toggle
+      projection: { isSubscribed: 1 }, // Only returns the isSubscribed field
+      lean: true, // Returns a plain JS object
+    },
+  );
   if (!result) {
     throw new ApiError("User not found or email mismatch", 404);
   }
@@ -168,7 +176,7 @@ exports.handleSubscribeNewLetter = async (req, res) => {
   res.status(200).json({
     status: 0,
     msg: "Subscribed",
-    state: result?.isSubscribed,
+    state: result,
   });
 };
 

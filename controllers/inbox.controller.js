@@ -31,7 +31,7 @@ exports.handleDeleteMessageById = async (req, res) => {
   try {
     session.startTransaction();
 
-    const findMessage = await Inbox.findById(id).session(session);
+    const findMessage = await Inbox.findById(id).lean().session(session);
     if (!findMessage) {
       throw new ApiError("Message not found", 404);
     }
@@ -42,9 +42,9 @@ exports.handleDeleteMessageById = async (req, res) => {
         $pull: { messages: id },
       },
       { session },
-    );
+    ).lean();
 
-    const deleteMessage = await Inbox.findByIdAndDelete(id, { session });
+    const deleteMessage = await Inbox.findByIdAndDelete(id, { session }).lean();
     await session.commitTransaction();
 
     res.status(200).json({
@@ -88,7 +88,7 @@ exports.handleCreateMessage = async (req, res) => {
         $push: { messages: newMessage[0]._id },
       },
       { session },
-    );
+    ).lean();
 
     // saving transactions and sending response
     await session.commitTransaction();

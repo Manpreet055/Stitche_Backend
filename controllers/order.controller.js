@@ -11,7 +11,8 @@ exports.handleGetOrderDataById = async (req, res) => {
 
   const orders = await Order.findById(id)
     .populate("products.product")
-    .populate("user", "profile.fullName");
+    .populate("user", "profile.fullName")
+    .lean();
 
   if (!orders) {
     throw new ApiError("Order not found", 404);
@@ -33,7 +34,7 @@ exports.handleDeleteOrderById = async (req, res) => {
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
-    const findOrder = await Order.findById(id).session(session);
+    const findOrder = await Order.findById(id).lean().session(session);
 
     if (!findOrder) {
       await session.abortTransaction();
@@ -47,10 +48,10 @@ exports.handleDeleteOrderById = async (req, res) => {
         $pull: { orders: id },
       },
       { session },
-    );
+    ).lean();
 
     // deleting the order id from orders collection
-    const deleteOrder = await Order.findByIdAndDelete(id, { session });
+    const deleteOrder = await Order.findByIdAndDelete(id, { session }).lean();
     await session.commitTransaction();
 
     res.status(200).json({
@@ -94,7 +95,7 @@ exports.handlePlaceOrder = async (req, res) => {
         $set: { cart: [] },
       },
       { session, new: true },
-    );
+    ).lean();
 
     await session.commitTransaction(); // saving changes
     // success response
@@ -127,18 +128,20 @@ exports.handleGetOrderHistory = async (req, res) => {
     throw new ApiError("User Id is not valid", 400);
   }
 
-  const userRecord = await User.findById(id, "orders");
+  const userRecord = await User.findById(id, "orders").lean();
   const totalOrdersCount = userRecord?.orders?.length || 0;
 
   // finding orders and applying pmethodrojection
-  const orders = await User.findById(id, "orders").populate({
-    path: "orders",
-    select: "totalAmount shipping.trackingId orderStatus createdAt user",
-    options: {
-      skip: skip,
-      limit: limit,
-    },
-  });
+  const orders = await User.findById(id, "orders")
+    .populate({
+      path: "orders",
+      select: "totalAmount shipping.trackingId orderStatus createdAt user",
+      options: {
+        skip: skip,
+        limit: limit,
+      },
+    })
+    .lean();
 
   if (!orders) {
     throw new ApiError("Orders history not found", 404);
@@ -160,7 +163,7 @@ exports.handleOrderCancellation = async (req, res) => {
 
   const cancelOrder = await Order.findByIdAndUpdate(id, {
     $set: { orderStatus: "cancelled" },
-  });
+  }).lean();
 
   if (!cancelOrder) {
     throw new ApiError("Order history not found", 404);

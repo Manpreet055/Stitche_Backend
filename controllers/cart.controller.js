@@ -8,7 +8,7 @@ exports.handleGetCartData = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError("User Id is not valid", 400);
   }
-  const user = await User.findById(id).populate("cart.product");
+  const user = await User.findById(id).populate("cart.product").lean();
   if (!user) {
     throw new ApiError("User not found", 404);
   }
@@ -31,7 +31,9 @@ exports.handleAddProductToCart = async (req, res) => {
     { _id: id, "cart.product": product },
     { $inc: { "cart.$.qty": qty || 1 } },
     { new: true, runValidators: true },
-  ).populate("cart.product");
+  )
+    .populate("cart.product")
+    .lean();
 
   //if user is null, it means the product wasn't in the cart
   if (!user) {
@@ -39,7 +41,9 @@ exports.handleAddProductToCart = async (req, res) => {
       id,
       { $push: { cart: { product, qty } } },
       { new: true, runValidators: true }, // Added new: true to get updated data
-    ).populate("cart.product");
+    )
+      .populate("cart.product")
+      .lean();
   }
 
   if (!user) {
@@ -58,28 +62,23 @@ exports.handleRemoveProductFromCart = async (req, res) => {
   const { productId } = req.query;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({
-      status: 0,
-      msg: "User Id is not valid",
-    });
+    throw new ApiError("User Id is not valid", 400);
   }
+
   if (!id || !productId) {
-    return res.status(400).json({
-      status: 0,
-      msg: "Please Provide Correct Product and User Id.",
-    });
+    throw new ApiError("Please Provide Correct Product and User Id.", 400);
   }
+
   const user = await User.findOneAndUpdate(
     { _id: id, "cart.product": productId },
     { $pull: { cart: { product: productId } } },
     { new: true, runValidators: true },
-  ).populate("cart.product");
+  )
+    .populate("cart.product")
+    .lean();
 
   if (!user) {
-    return res.status(404).json({
-      status: 0,
-      msg: "User does not exist.",
-    });
+    throw new ApiError("User does not exist!", 404);
   }
 
   res.status(200).json({
@@ -102,7 +101,10 @@ exports.handleUpdateCartQty = async (req, res) => {
       {
         $pull: { cart: { product } },
       },
-    ).populate("cart.product");
+    )
+      .populate("cart.product")
+      .lean();
+
     return res.status(200).json({
       status: 1,
       msg: "Product removed from the cart",
@@ -114,7 +116,9 @@ exports.handleUpdateCartQty = async (req, res) => {
     { _id: id, "cart.product": product },
     { $set: { "cart.$.qty": qty } },
     { new: true, runValidators: true },
-  ).populate("cart.product");
+  )
+    .populate("cart.product")
+    .lean();
 
   res.status(200).json({
     status: 1,

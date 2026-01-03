@@ -24,7 +24,7 @@ app.set("trust proxy", 1);
 
 // Initializing Middlewares
 app.use(
-  morgan("dev", {
+  morgan("combined", {
     //this is the middleware used to check the incoming logs
     skip: (req) => req.method === "OPTIONS",
   }),
@@ -36,6 +36,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5174",
+      "http://172.16.17.149:5173",
       "http://localhost:5173", // Remove trailing slashes
       process.env.CORS_ORIGIN,
     ],

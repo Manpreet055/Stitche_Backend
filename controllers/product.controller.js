@@ -51,7 +51,7 @@ exports.handleToggleFeatured = async (req, res) => {
     _id,
     { isFeatured },
     { new: true },
-  );
+  ).lean();
   res.status(200).json({
     status: 1,
     msg: "Product Featured status updated sucessfully..",
