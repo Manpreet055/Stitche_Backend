@@ -24,7 +24,7 @@ app.set("trust proxy", 1);
 
 // Initializing Middlewares
 app.use(
-  morgan("combined", {
+  morgan("dev", {
     //this is the middleware used to check the incoming logs
     skip: (req) => req.method === "OPTIONS",
   }),
@@ -54,4 +54,5 @@ app.use("/orders", rateLimiter, orderRoute);
 // app.listen(port, () => {
 //   console.log(`Server is running on port ${port}`);
 // });
+
 module.exports = app;

@@ -21,7 +21,7 @@ router.post("/login", asyncHandler(handleLogin));
 router.post("/signup", asyncHandler(handleSignup));
 router.post("/refresh-token", asyncHandler(getNewAccessToken));
 router.patch(
-  "/subscirbe",
+  "/subscribe",
   authMiddleware,
   asyncHandler(handleSubscribeNewLetter),
 );

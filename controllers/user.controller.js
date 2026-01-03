@@ -176,7 +176,7 @@ exports.handleSubscribeNewLetter = async (req, res) => {
   res.status(200).json({
     status: 0,
     msg: "Subscribed",
-    state: result,
+    state: result.isSubscribed,
   });
 };
 
