@@ -27,7 +27,7 @@ app.use(
   morgan("dev", {
     //this is the middleware used to check the incoming logs
     skip: (req) => req.method === "OPTIONS",
-  }),
+  })
 );
 app.use(express.json());
 app.use(cookieParser());
@@ -41,7 +41,8 @@ app.use(
       process.env.CORS_ORIGIN,
     ],
     credentials: true,
-  }),
+    maxAge: 86400,
+  })
 );
 // Routes prefixes
 app.use("/api", rateLimiter, coreRoute);
@@ -50,6 +51,8 @@ app.use("/users", rateLimiter, userRoute);
 app.use("/cart", rateLimiter, cartRoute);
 app.use("/inbox", rateLimiter, inboxRoute);
 app.use("/orders", rateLimiter, orderRoute);
+app.get("/favicon.ico", (req, res) => res.status(204).end());
+app.get("/favicon.png", (req, res) => res.status(204).end()); // Handle favicon requests
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
