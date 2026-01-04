@@ -4,7 +4,7 @@ const ApiError = require("../utils/ApiError");
 
 exports.handleGetCartData = async (req, res) => {
   // Validating the UserId first
-  const { id } = req?.user?.payload;
+  const { id } = req.user.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError("User Id is not valid", 400);
   }
@@ -20,7 +20,7 @@ exports.handleGetCartData = async (req, res) => {
 };
 
 exports.handleAddProductToCart = async (req, res) => {
-  const { id } = req.user?.payload;
+  const { id } = req.user.payload;
   const { product, qty } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {

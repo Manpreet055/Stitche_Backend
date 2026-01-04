@@ -66,7 +66,7 @@ exports.handleDeleteMessageById = async (req, res) => {
 };
 
 exports.handleCreateMessage = async (req, res) => {
-  const { id } = req?.user?.payload;
+  const { id } = req.user.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError("User is is not valid", 400);
   }

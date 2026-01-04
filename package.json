@@ -17,7 +17,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "prettier --write .",
-    "dev": "nodemon api/index"
+    "dev": "nodemon api/index",
+    "lint": "eslint ."
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -25,6 +26,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "eslint": "^9.39.2",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",

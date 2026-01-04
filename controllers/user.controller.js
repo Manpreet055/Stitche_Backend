@@ -129,12 +129,12 @@ exports.handleLogin = async (req, res) => {
 };
 
 exports.handleLogoutUser = async (req, res) => {
-  const { id } = req?.user?.payload;
+  const { id } = req.user.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError("Id is not valid", 400);
   }
 
-  const refreshToken = req.cookies?.refreshToken;
+  const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
     return res.sendStatus(204);
   }
@@ -151,7 +151,7 @@ exports.handleLogoutUser = async (req, res) => {
 };
 
 exports.handleSubscribeNewLetter = async (req, res) => {
-  const { id } = req?.user?.payload;
+  const { id } = req.user.payload;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError("Id is not valid", 400);
   }
@@ -181,7 +181,7 @@ exports.handleSubscribeNewLetter = async (req, res) => {
 };
 
 exports.updateUserProfile = async (req, res) => {
-  const { id } = req?.user?.payload;
+  const { id } = req.user.payload;
   // Checking for invalid id
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError("User id is not valid", 400);

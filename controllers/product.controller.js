@@ -174,7 +174,7 @@ exports.handleCreateProduct = async (req, res) => {
 
   // Extract discount correctly
   const discount = {
-    value: Number(productDetails.value) ?? 0,
+    value: Number(productDetails.value) || 0,
     type: productDetails.type || "no-offers",
   };
 

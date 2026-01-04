@@ -51,8 +51,8 @@ app.use("/cart", rateLimiter, cartRoute);
 app.use("/inbox", rateLimiter, inboxRoute);
 app.use("/orders", rateLimiter, orderRoute);
 
-// app.listen(port, () => {
-//   console.log(`Server is running on port ${port}`);
-// });
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
 
 module.exports = app;

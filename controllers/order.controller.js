@@ -71,7 +71,7 @@ exports.handleDeleteOrderById = async (req, res) => {
 };
 
 exports.handlePlaceOrder = async (req, res) => {
-  const { id } = req?.user?.payload;
+  const { id } = req.user.payload;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError("User Id is not valid", 400);
@@ -118,7 +118,7 @@ exports.handlePlaceOrder = async (req, res) => {
 };
 
 exports.handleGetOrderHistory = async (req, res) => {
-  const { id } = req?.user?.payload;
+  const { id } = req.user.payload;
 
   let { limit, page } = req.query;
   limit = parseInt(limit) || 10;

@@ -1,6 +1,5 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
-const mongoose = require("mongoose");
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -21,9 +20,9 @@ const authMiddleware = (req, res, next) => {
     const decodedPayload = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
     req.user = decodedPayload;
     next();
-  } catch (err) {
+  } catch (error) {
     return res.status(401).json({
-      error: "Authentication Failed",
+      error: "Authentication Failed" + error.message,
     });
   }
 };
