@@ -113,24 +113,22 @@ if (process.env.NODE_ENV === "production") {
   connectionPromise = connectMongoDB()
     .then(() => {
       console.log("MongoDB ready for serverless requests");
-      connectionPromise = null; // Clear promise after successful connection
+      return true; // Indicate success
     })
     .catch((error) => {
       console.error("MongoDB connection failed during cold start:", error.message);
-      const err = error; // Store error before clearing promise
-      connectionPromise = null; // Allow retry on next request
-      throw err;
+      return false; // Indicate failure, but don't throw to avoid unhandled rejection
     });
 }
 
 module.exports = async (req, res) => {
   // If connection is still being established, wait for it
   if (connectionPromise) {
-    try {
-      await connectionPromise;
-    } catch (error) {
-      // Connection failed during cold start, log details and try again
-      console.error("Cold start connection failed:", error.message);
+    const success = await connectionPromise;
+    connectionPromise = null; // Clear promise after first request
+    
+    if (!success) {
+      console.error("Cold start connection failed, attempting reconnect...");
     }
   }
   
