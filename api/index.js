@@ -91,6 +91,7 @@ app.use((err, req, res, next) => {
 });
 
 // Only start server when running locally (not in Vercel)
+// Vercel sets NODE_ENV=production, so we check both NODE_ENV and require.main
 if (process.env.NODE_ENV !== "production" && require.main === module) {
   connectMongoDB()
     .then(() => {
@@ -109,6 +110,7 @@ if (process.env.NODE_ENV !== "production" && require.main === module) {
 let connectionPromise = null;
 
 // Initialize connection when module loads (cold start)
+// This only runs in Vercel's serverless environment where NODE_ENV=production
 if (process.env.NODE_ENV === "production") {
   connectionPromise = connectMongoDB()
     .then(() => {
