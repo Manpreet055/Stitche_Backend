@@ -106,50 +106,42 @@ if (process.env.NODE_ENV !== "production" && require.main === module) {
 
 // Serverless handler for Vercel
 // The connection is established once and cached globally
-let isConnecting = false;
-let connectionError = null;
+let connectionPromise = null;
 
 // Initialize connection when module loads (cold start)
 if (process.env.NODE_ENV === "production") {
-  isConnecting = true;
-  connectMongoDB()
+  connectionPromise = connectMongoDB()
     .then(() => {
-      isConnecting = false;
       console.log("MongoDB ready for serverless requests");
+      connectionPromise = null; // Clear promise after successful connection
     })
     .catch((error) => {
-      isConnecting = false;
-      connectionError = error;
-      console.error("MongoDB connection failed:", error);
+      console.error("MongoDB connection failed during cold start:", error);
+      connectionPromise = null; // Allow retry on next request
+      throw error;
     });
 }
 
 module.exports = async (req, res) => {
   // If connection is still being established, wait for it
-  if (isConnecting) {
+  if (connectionPromise) {
     try {
-      await connectMongoDB();
+      await connectionPromise;
     } catch (error) {
-      console.error("Failed to connect to MongoDB:", error);
-      return res.status(500).json({
-        status: 0,
-        msg: "Database connection failed",
-      });
+      // Connection failed during cold start, try again
+      console.log("Retrying MongoDB connection...");
     }
   }
   
-  // If there was a connection error, try to reconnect
-  if (connectionError) {
-    try {
-      await connectMongoDB();
-      connectionError = null;
-    } catch (error) {
-      console.error("Failed to reconnect to MongoDB:", error);
-      return res.status(500).json({
-        status: 0,
-        msg: "Database connection failed",
-      });
-    }
+  // Ensure connection is ready (uses cached connection if already established)
+  try {
+    await connectMongoDB();
+  } catch (error) {
+    console.error("Failed to connect to MongoDB:", error);
+    return res.status(500).json({
+      status: 0,
+      msg: "Database connection failed",
+    });
   }
 
   // Handle the request with Express app
