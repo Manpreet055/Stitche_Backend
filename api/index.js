@@ -43,17 +43,8 @@ app.use(
     maxAge: 86400,
   })
 );
-// Routes prefixes
-app.use("/api", rateLimiter, coreRoute);
-app.use("/products", rateLimiter, productRoute);
-app.use("/users", rateLimiter, userRoute);
-app.use("/cart", rateLimiter, cartRoute);
-app.use("/inbox", rateLimiter, inboxRoute);
-app.use("/orders", rateLimiter, orderRoute);
-app.get("/favicon.ico", (req, res) => res.status(204).end());
-app.get("/favicon.png", (req, res) => res.status(204).end()); // Handle favicon requests
 
-// Health check endpoint
+// Health check endpoint - must be before other routes
 app.get("/health", async (req, res) => {
   try {
     await connectMongoDB();
@@ -71,6 +62,16 @@ app.get("/health", async (req, res) => {
     });
   }
 });
+
+// Routes prefixes
+app.use("/api", rateLimiter, coreRoute);
+app.use("/products", rateLimiter, productRoute);
+app.use("/users", rateLimiter, userRoute);
+app.use("/cart", rateLimiter, cartRoute);
+app.use("/inbox", rateLimiter, inboxRoute);
+app.use("/orders", rateLimiter, orderRoute);
+app.get("/favicon.ico", (req, res) => res.status(204).end());
+app.get("/favicon.png", (req, res) => res.status(204).end()); // Handle favicon requests
 
 // 404 handler - must be after all routes
 app.use((req, res) => {
