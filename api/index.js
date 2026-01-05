@@ -116,9 +116,10 @@ if (process.env.NODE_ENV === "production") {
       connectionPromise = null; // Clear promise after successful connection
     })
     .catch((error) => {
-      console.error("MongoDB connection failed during cold start:", error);
+      console.error("MongoDB connection failed during cold start:", error.message);
+      const err = error; // Store error before clearing promise
       connectionPromise = null; // Allow retry on next request
-      throw error;
+      throw err;
     });
 }
 
@@ -128,8 +129,8 @@ module.exports = async (req, res) => {
     try {
       await connectionPromise;
     } catch (error) {
-      // Connection failed during cold start, try again
-      console.log("Retrying MongoDB connection...");
+      // Connection failed during cold start, log details and try again
+      console.error("Cold start connection failed:", error.message);
     }
   }
   

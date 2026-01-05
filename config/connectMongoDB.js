@@ -15,7 +15,9 @@ async function connectMongoDB() {
 
   if (!cached.promise) {
     const opts = {
-      bufferCommands: true, // Allow buffering commands until connection is ready
+      // bufferCommands allows Mongoose to queue operations until connection is ready
+      // This is critical for serverless environments where commands may arrive before connection completes
+      bufferCommands: true,
       serverSelectionTimeoutMS: 30000, // 30 seconds for server selection
       socketTimeoutMS: 45000, // 45 seconds for socket operations
       maxPoolSize: 10, // Maximum number of connections in the pool
