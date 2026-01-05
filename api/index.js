@@ -19,7 +19,6 @@ const orderRoute = require("../routes/order.route");
 const productRoute = require("../routes/product.route");
 
 const app = express();
-connectMongoDB();
 app.set("trust proxy", 1);
 
 // Initializing Middlewares
@@ -54,8 +53,98 @@ app.use("/orders", rateLimiter, orderRoute);
 app.get("/favicon.ico", (req, res) => res.status(204).end());
 app.get("/favicon.png", (req, res) => res.status(204).end()); // Handle favicon requests
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+// Health check endpoint
+app.get("/health", async (req, res) => {
+  try {
+    await connectMongoDB();
+    res.status(200).json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      mongodb: "connected",
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: "error",
+      timestamp: new Date().toISOString(),
+      mongodb: "disconnected",
+      error: error.message,
+    });
+  }
 });
 
-module.exports = app;
+// 404 handler - must be after all routes
+app.use((req, res) => {
+  res.status(404).json({
+    status: 0,
+    msg: "Route not found",
+  });
+});
+
+// Global error handler - must be last
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(err.statusCode || 500).json({
+    status: 0,
+    msg: err.message || "Internal server error",
+  });
+});
+
+// Only start server when running locally (not in Vercel)
+// Vercel sets NODE_ENV=production, so we check both NODE_ENV and require.main
+if (process.env.NODE_ENV !== "production" && require.main === module) {
+  connectMongoDB()
+    .then(() => {
+      app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+      });
+    })
+    .catch((error) => {
+      console.error("Failed to connect to MongoDB:", error);
+      process.exit(1);
+    });
+}
+
+// Serverless handler for Vercel
+// The connection is established once and cached globally
+let connectionPromise = null;
+
+// Initialize connection when module loads (cold start)
+// This only runs in Vercel's serverless environment where NODE_ENV=production
+if (process.env.NODE_ENV === "production") {
+  connectionPromise = connectMongoDB()
+    .then(() => {
+      console.log("MongoDB ready for serverless requests");
+      return true; // Indicate success
+    })
+    .catch((error) => {
+      console.error("MongoDB connection failed during cold start:", error.message);
+      return false; // Indicate failure, but don't throw to avoid unhandled rejection
+    });
+}
+
+module.exports = async (req, res) => {
+  // If connection is still being established, wait for it
+  if (connectionPromise) {
+    const success = await connectionPromise;
+    connectionPromise = null; // Clear promise after first request
+    
+    if (!success) {
+      console.error("Cold start connection failed, attempting reconnect...");
+    }
+  }
+  
+  // Ensure connection is ready (uses cached connection if already established)
+  try {
+    await connectMongoDB();
+  } catch (error) {
+    console.error("Failed to connect to MongoDB:", error);
+    return res.status(500).json({
+      status: 0,
+      msg: "Database connection failed",
+    });
+  }
+
+  // Handle the request with Express app
+  return app(req, res);
+};
