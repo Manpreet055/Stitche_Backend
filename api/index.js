@@ -81,7 +81,8 @@ app.use((req, res) => {
 });
 
 // Global error handler - must be last
-app.use((err, req, res) => {
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
   console.error("Unhandled error:", err);
   res.status(err.statusCode || 500).json({
     status: 0,
@@ -91,21 +92,66 @@ app.use((err, req, res) => {
 
 // Only start server when running locally (not in Vercel)
 if (process.env.NODE_ENV !== "production" && require.main === module) {
-  app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-  });
+  connectMongoDB()
+    .then(() => {
+      app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+      });
+    })
+    .catch((error) => {
+      console.error("Failed to connect to MongoDB:", error);
+      process.exit(1);
+    });
 }
 
 // Serverless handler for Vercel
-module.exports = async (req, res) => {
-  try {
-    await connectMongoDB();
-    return app(req, res);
-  } catch (error) {
-    console.error("Failed to connect to MongoDB:", error);
-    return res.status(500).json({
-      status: 0,
-      msg: "Database connection failed",
+// The connection is established once and cached globally
+let isConnecting = false;
+let connectionError = null;
+
+// Initialize connection when module loads (cold start)
+if (process.env.NODE_ENV === "production") {
+  isConnecting = true;
+  connectMongoDB()
+    .then(() => {
+      isConnecting = false;
+      console.log("MongoDB ready for serverless requests");
+    })
+    .catch((error) => {
+      isConnecting = false;
+      connectionError = error;
+      console.error("MongoDB connection failed:", error);
     });
+}
+
+module.exports = async (req, res) => {
+  // If connection is still being established, wait for it
+  if (isConnecting) {
+    try {
+      await connectMongoDB();
+    } catch (error) {
+      console.error("Failed to connect to MongoDB:", error);
+      return res.status(500).json({
+        status: 0,
+        msg: "Database connection failed",
+      });
+    }
   }
+  
+  // If there was a connection error, try to reconnect
+  if (connectionError) {
+    try {
+      await connectMongoDB();
+      connectionError = null;
+    } catch (error) {
+      console.error("Failed to reconnect to MongoDB:", error);
+      return res.status(500).json({
+        status: 0,
+        msg: "Database connection failed",
+      });
+    }
+  }
+
+  // Handle the request with Express app
+  return app(req, res);
 };
