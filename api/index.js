@@ -27,7 +27,7 @@ app.use(
   morgan("dev", {
     //this is the middleware used to check the incoming logs
     skip: (req) => req.method === "OPTIONS",
-  }),
+  })
 );
 app.use(express.json());
 app.use(cookieParser());
@@ -37,11 +37,11 @@ app.use(
     origin: [
       "http://localhost:5174",
       "http://172.16.17.149:5173",
-      "http://localhost:5173", // Remove trailing slashes
+      "http://localhost:5173",
       process.env.CORS_ORIGIN,
     ],
     credentials: true,
-  }),
+  })
 );
 // Routes prefixes
 app.use("/api", rateLimiter, coreRoute);
@@ -50,9 +50,15 @@ app.use("/users", rateLimiter, userRoute);
 app.use("/cart", rateLimiter, cartRoute);
 app.use("/inbox", rateLimiter, inboxRoute);
 app.use("/orders", rateLimiter, orderRoute);
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.use("/health", (req, res) => {
+  res.status(200).json({ status: "OK" });
 });
+
+// Starting the server
+if (process.env.NODE_ENV === "production") {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
 
 module.exports = app;
