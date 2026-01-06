@@ -7,17 +7,24 @@ const {
   handleGetstats,
 } = require("../controllers/core.controller");
 const asyncHandler = require("../utils/asyncHandler");
+const { authMiddleware } = require("../middlewares/authentication.middleware");
+const { verifyAdmin } = require("../middlewares/authorization.middleware");
 
 const router = express.Router();
 
-router.get("/search", asyncHandler(handleSearch));
-router.get("/stats", asyncHandler(handleGetstats));
+router.get("/search", authMiddleware, verifyAdmin, asyncHandler(handleSearch));
+router.get("/stats", authMiddleware, verifyAdmin, asyncHandler(handleGetstats));
 
-router.get("/:schema", asyncHandler(handleGetAllData));
+router.get(
+  "/:schema",
+  authMiddleware,
+  verifyAdmin,
+  asyncHandler(handleGetAllData),
+);
 
 router
   .route("/:schema/:id")
-  .get(asyncHandler(handleGetDataById))
-  .delete(asyncHandler(handleDeleteDataById));
+  .get(authMiddleware, verifyAdmin, asyncHandler(handleGetDataById))
+  .delete(authMiddleware, verifyAdmin, asyncHandler(handleDeleteDataById));
 
 module.exports = router;

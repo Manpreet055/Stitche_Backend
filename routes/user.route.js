@@ -11,7 +11,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const {
   getNewAccessToken,
   authMiddleware,
-} = require("../middlewares/auth.middleware");
+} = require("../middlewares/authentication.middleware");
 const { handleProfileImage } = require("../middlewares/multer.middleware");
 
 const router = express.Router();

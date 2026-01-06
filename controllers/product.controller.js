@@ -3,6 +3,7 @@ const uploadBuffer = require("../utils/uploadBuffer");
 const parseNumbers = require("../utils/parseNumber");
 const applyFilters = require("../utils/applyFilters");
 const ApiError = require("../utils/ApiError");
+const mongoose = require("mongoose");
 
 exports.handleGetProducts = async (req, res) => {
   let { limit, page, sortingOrder, sortField, price, ...filters } = req.query;
@@ -142,6 +143,24 @@ exports.handleUpdateProduct = async (req, res) => {
     status: 1,
     msg: "Product updated successfully",
     updatedProduct: product,
+  });
+};
+
+exports.handleGetProductDataById = async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError("Product ID is not valid", 400);
+  }
+
+  const product = await Product.findById(id).lean();
+
+  if (!product) {
+    throw new ApiError("Product data not found", 404);
+  }
+  res.status(200).json({
+    status: 1,
+    msg: "Data fetching Successful",
+    data: product,
   });
 };
 

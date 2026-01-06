@@ -22,7 +22,7 @@ const authMiddleware = (req, res, next) => {
     next();
   } catch (error) {
     return res.status(401).json({
-      error: "Authentication Failed" + error.message,
+      error: "Authentication Failed " + error.message,
     });
   }
 };

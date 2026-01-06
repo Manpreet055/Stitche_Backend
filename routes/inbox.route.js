@@ -1,5 +1,5 @@
 const express = require("express");
-const { authMiddleware } = require("../middlewares/auth.middleware");
+const { authMiddleware } = require("../middlewares/authentication.middleware");
 const {
   handleGetMessageDataById,
   handleDeleteMessageById,

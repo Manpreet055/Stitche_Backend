@@ -27,7 +27,7 @@ app.use(
   morgan("dev", {
     //this is the middleware used to check the incoming logs
     skip: (req) => req.method === "OPTIONS",
-  })
+  }),
 );
 app.use(express.json());
 app.use(cookieParser());
@@ -41,7 +41,7 @@ app.use(
       process.env.CORS_ORIGIN,
     ],
     credentials: true,
-  })
+  }),
 );
 // Routes prefixes
 app.use("/api", rateLimiter, coreRoute);
@@ -55,7 +55,7 @@ app.use("/health", (req, res) => {
 });
 
 // Starting the server
-if (process.env.NODE_ENV === "production") {
+if (process.env.NODE_ENV !== "production") {
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });

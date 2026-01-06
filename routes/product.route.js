@@ -10,6 +10,7 @@ const {
   handleUpdateProduct,
   handleCreateProduct,
   handleGetProducts,
+  handleGetProductDataById,
 } = require("../controllers/product.controller");
 const asyncHandler = require("../utils/asyncHandler");
 
@@ -21,11 +22,10 @@ router
   .patch(asyncHandler(handleToggleFeatured))
   .post(handleNewImages, asyncHandler(handleCreateProduct));
 
-router.patch(
-  "/edit/:id",
-  handleUpdatedImages,
-  asyncHandler(handleUpdateProduct),
-);
+router
+  .route("/:id")
+  .get(asyncHandler(handleGetProductDataById))
+  .patch(handleUpdatedImages, asyncHandler(handleUpdateProduct));
 router.get("/search", asyncHandler(handleProductSearch));
 
 module.exports = router;

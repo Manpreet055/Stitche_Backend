@@ -4,7 +4,7 @@ const uploadBuffer = require("../utils/uploadBuffer");
 const {
   generateAccessToken,
   generateRefreshToken,
-} = require("../middlewares/auth.middleware");
+} = require("../middlewares/authentication.middleware");
 const mongoose = require("mongoose");
 const ApiError = require("../utils/ApiError");
 

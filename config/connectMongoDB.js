@@ -14,7 +14,6 @@ async function connectMongoDB() {
     cached.promise = mongoose
       .connect(process.env.MONGO_URI, {
         bufferCommands: false,
-        
       })
       .then((mongoose) => {
         console.log("=> New MongoDB Connection Established");
