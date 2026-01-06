@@ -19,6 +19,7 @@ exports.handleGetUserById = async (req, res) => {
     throw new ApiError("Id is not valid", 400);
   }
 
+  // Fetching user without sensitive info
   const user = await User.findById(id, -"password -refreshToken")
     .populate("cart.product")
     .lean();
@@ -39,32 +40,34 @@ exports.handleSignup = async (req, res) => {
     throw new ApiError("Please Provide Signup Data", 400);
   }
 
-  // generating form data to pass schema validation
+  // Creating form data for new user
   const formData = {
     ...req.body,
     username: (req.body?.fullname + "123").trim(),
     cart: [],
+    role: "user", // default role so that no one can signup as admin
     profile: {
       fullName: req.body?.fullname,
       phone: Math.floor(1000000000 + Math.random() * 9000000000), // random number
     },
   };
+  delete formData?.fullname;
 
-  delete formData?.fullname; // deleting the full name key from formdata
   const user = await User.create(formData);
   if (!user) {
     throw new ApiError("failed to create the user", 409);
   }
 
-  // creating payload to generate tokens
+  /// Generating tokens
   const payload = {
     id: user.id,
+    role: user.role,
   };
   const token = generateAccessToken(payload);
   const refreshToken = generateRefreshToken(payload);
   user.refreshToken = [...user.refreshToken, refreshToken];
-  await user.save();
 
+  await user.save(); // saving the refresh token
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: true,
@@ -72,6 +75,9 @@ exports.handleSignup = async (req, res) => {
     maxAge: 15 * 24 * 60 * 60 * 1000,
   });
 
+  // Removing sensitive info before sending response
+  user.password = undefined;
+  user.refreshToken = undefined;
   res.status(201).json({
     status: 1,
     msg: "User Created",
@@ -82,25 +88,30 @@ exports.handleSignup = async (req, res) => {
 
 exports.handleLogin = async (req, res) => {
   const { email, password } = req.body;
+  if (!email || !password) {
+    throw new ApiError("Please provide email and password", 400);
+  }
+
   const user = await User.findOne({ email }).populate("cart.product");
   if (!user) {
     throw new ApiError("User not found", 404);
   }
 
+  // bcrypt password comparison
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     throw new ApiError("Incorrect login credentials", 401);
   }
+
+  // Generating tokens
   const payload = {
     id: user.id,
     role: user.role,
   };
-
   const token = generateAccessToken(payload);
   const refreshToken = generateRefreshToken(payload);
 
-  // Only allowed limited token
-  // if limit hits than the oldest token will be removed
+  // max refresh tokens logic
   const MAX_TOKENS = Number(process.env.MAX_REFRESH_TOKENS) || 5;
 
   if (user.refreshToken.length === MAX_TOKENS) {
@@ -119,7 +130,9 @@ exports.handleLogin = async (req, res) => {
     maxAge: 15 * 24 * 60 * 60 * 1000,
   });
 
-  //Sending the access token in response body
+  // Removing sensitive info before sending response
+  user.password = undefined;
+  user.refreshToken = undefined;
   res.status(200).json({
     status: 1,
     msg: "Login Successfull",
@@ -142,6 +155,7 @@ exports.handleLogoutUser = async (req, res) => {
   await User.findByIdAndUpdate(id, {
     $pull: { refreshToken: refreshToken },
   }).lean();
+
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: true,
@@ -160,6 +174,7 @@ exports.handleSubscribeNewLetter = async (req, res) => {
     throw new ApiError("Please provide email", 400);
   }
 
+  // Toggling the isSubscribed field
   const result = await User.findOneAndUpdate(
     { _id: id, email: email },
     [{ $set: { isSubscribed: { $not: "$isSubscribed" } } }],
@@ -182,7 +197,6 @@ exports.handleSubscribeNewLetter = async (req, res) => {
 
 exports.updateUserProfile = async (req, res) => {
   const { id } = req.user.payload;
-  // Checking for invalid id
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError("User id is not valid", 400);
   }
@@ -194,15 +208,15 @@ exports.updateUserProfile = async (req, res) => {
 
   const avatar = req.file;
   if (avatar) {
+    // converting buffer into streams
     const uploadedPic = await uploadBuffer(
-      // converting buffer into streams
       avatar.buffer, // incoming file buffer provided by multer
       `/users/profile-pics`, // Cloudinary folder name
     );
     user.profile.avatar = uploadedPic.secure_url;
   }
 
-  // only allowed these fields to change
+  //whitelisting fields that can be updated
   const allowedFields = [
     "username",
     "email",
@@ -214,6 +228,7 @@ exports.updateUserProfile = async (req, res) => {
     "postalCode",
   ];
 
+  // Ensuring address object exists
   if (!user.profile.address) {
     user.profile.address = {
       street: "",
@@ -222,7 +237,7 @@ exports.updateUserProfile = async (req, res) => {
       postalCode: "",
     };
   }
-
+  // Updating only allowed fields
   allowedFields.forEach((field) => {
     if (field in req.body) {
       if (["street", "city", "country", "postalCode"].includes(field)) {
@@ -237,6 +252,9 @@ exports.updateUserProfile = async (req, res) => {
 
   await user.save();
 
+  // Removing sensitive info before sending response
+  user.password = undefined;
+  user.refreshToken = undefined;
   res.status(200).json({
     status: 1,
     msg: "Profile updated",

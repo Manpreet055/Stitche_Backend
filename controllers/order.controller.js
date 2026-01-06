@@ -4,9 +4,23 @@ const User = require("../models/user.model");
 const ApiError = require("../utils/ApiError");
 
 exports.handleGetOrderDataById = async (req, res) => {
+  const { id: userId, role } = req.user.payload;
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new ApiError("User Id is not valid", 400);
+  }
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError("Order id is not valid", 400);
+  }
+
+  const userRecord = await User.findById(userId, "orders").lean();
+
+  // authorization check
+  if (
+    !userRecord?.orders?.includes(mongoose.Types.ObjectId(id)) &&
+    role !== "admin"
+  ) {
+    throw new ApiError("You are not authorized to access this order", 403);
   }
 
   const orders = await Order.findById(id)
@@ -156,11 +170,27 @@ exports.handleGetOrderHistory = async (req, res) => {
 };
 
 exports.handleOrderCancellation = async (req, res) => {
+  const { id: userId, role } = req.user.payload;
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new ApiError("User Id is not valid", 400);
+  }
+
+  // order id
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError("Order id is not valid", 400);
   }
+  const userRecord = await User.findById(userId, "orders").lean();
 
+  // authorization check
+  if (
+    !userRecord?.orders?.includes(mongoose.Types.ObjectId(id)) &&
+    role !== "admin"
+  ) {
+    throw new ApiError("You are not authorized to access this order", 403);
+  }
+
+  //if authorized proceed to cancel order
   const cancelOrder = await Order.findByIdAndUpdate(id, {
     $set: { orderStatus: "cancelled" },
   }).lean();

@@ -87,9 +87,11 @@ const userSchema = new mongoose.Schema(
     cart: [cartItemSchema],
     role: {
       type: String,
-      default: "Unknown",
+      default: "user",
+      lowercase: true,
+      enum: ["user", "admin"],
     },
-    prefrences: userPreferences,
+    preferences: userPreferences,
 
     profile: {
       type: profileSchema,

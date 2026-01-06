@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
-const authMiddleware = (req, res, next) => {
+
+exports.authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).json({
@@ -27,19 +28,19 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-const generateAccessToken = (payload) => {
+exports.generateAccessToken = (payload) => {
   return jwt.sign({ payload }, process.env.JWT_ACCESS_SECRET, {
     expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
   });
 };
 
-const generateRefreshToken = (payload) => {
+exports.generateRefreshToken = (payload) => {
   return jwt.sign({ payload }, process.env.JWT_REFRESH_SECRET, {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
   });
 };
 
-const getNewAccessToken = async (req, res) => {
+exports.getNewAccessToken = async (req, res) => {
   const refreshToken = req.cookies?.refreshToken;
   if (!refreshToken) {
     return res.status(401).json({ msg: "Refresh token missing" });
@@ -66,11 +67,4 @@ const getNewAccessToken = async (req, res) => {
     res.status(403).json({ msg: "Invalid or expired refresh token" });
     throw err;
   }
-};
-
-module.exports = {
-  generateAccessToken,
-  authMiddleware,
-  generateRefreshToken,
-  getNewAccessToken,
 };

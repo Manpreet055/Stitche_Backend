@@ -9,12 +9,12 @@ const {
 } = require("../controllers/order.controller");
 const asyncHandler = require("../utils/asyncHandler");
 const router = express.Router();
-
+const { verifyAdmin } = require("../middlewares/authorization.middleware");
 router
   .route("/:id")
   .get(authMiddleware, asyncHandler(handleGetOrderDataById))
   .patch(authMiddleware, asyncHandler(handleOrderCancellation))
-  .delete(authMiddleware, asyncHandler(handleDeleteOrderById));
+  .delete(authMiddleware, verifyAdmin, handleDeleteOrderById);
 
 router
   .route("/")

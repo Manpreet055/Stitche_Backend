@@ -1,14 +1,17 @@
 const Product = require("../models/product.model");
-const uploadBuffer = require("../utils/uploadBuffer");
 const parseNumbers = require("../utils/parseNumber");
 const applyFilters = require("../utils/applyFilters");
 const ApiError = require("../utils/ApiError");
 const mongoose = require("mongoose");
+const {
+  handleNewProductImages,
+  handleUpdatedProductImages,
+} = require("../utils/handleImages");
 
 exports.handleGetProducts = async (req, res) => {
   let { limit, page, sortingOrder, sortField, price, ...filters } = req.query;
 
-  filters = applyFilters(filters); // Parsing the filters into what mongoose want
+  filters = applyFilters(filters); // parsing filters from query params
 
   limit = parseInt(limit) || 10;
   page = parseInt(page) || 1;
@@ -18,10 +21,11 @@ exports.handleGetProducts = async (req, res) => {
     isFeatured: true,
     price: { $lt: price ?? 1500 },
   });
-  const totalPages = Math.ceil(length / limit); //Calculating totalPages and sending it to the frontend for ease
+  const totalPages = Math.ceil(length / limit); // calculating total pages
 
   const order = sortingOrder === "desc" ? -1 : 1;
 
+  // fetching products based on filters, pagination and sorting
   const allProducts = await Product.find({
     ...filters,
     isFeatured: true,
@@ -43,19 +47,26 @@ exports.handleGetProducts = async (req, res) => {
 exports.handleToggleFeatured = async (req, res) => {
   const { isFeatured, _id } = req.body;
   if (!_id || typeof isFeatured === "undefined") {
-    throw new ApiError(
-      "Please provide all details to updated the featured status ",
-      400,
-    );
+    throw new ApiError("Product ID and isFeatured status are required", 400);
   }
+
+  // Check if product exists
+  const product = await Product.findById(_id);
+  if (!product) {
+    throw new ApiError("Product not found", 404);
+  }
+
+  // Update featured status
   const updateFeaturedStatus = await Product.findByIdAndUpdate(
     _id,
     { isFeatured },
     { new: true },
   ).lean();
+
+  // Respond with updated product
   res.status(200).json({
     status: 1,
-    msg: "Product Featured status updated sucessfully..",
+    msg: "Product featured status updated successfully",
     updateFeaturedStatus,
   });
 };
@@ -64,8 +75,8 @@ exports.handleUpdateProduct = async (req, res) => {
   const updates = req.body;
   const { id } = req.params;
 
-  if (!id) {
-    throw new ApiError("Product ID required", 400);
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError("Product ID is not valid", 400);
   }
 
   const product = await Product.findById(id);
@@ -73,54 +84,19 @@ exports.handleUpdateProduct = async (req, res) => {
     throw new ApiError("Product not found", 404);
   }
 
-  // PREPARE OLD VALUES
-  let images = [...product.media.images];
-  let thumbnail = product.media.thumbnail;
-
-  // HANDLE NEW THUMBNAIL
-  if (req.files?.newThumbnail) {
-    const result = await uploadBuffer(
-      req.files.newThumbnail[0].buffer,
-      `products/${product.title.trim()}/thumbnails`,
-    );
-    thumbnail = result.secure_url;
-  }
-
-  // HANDLE NEW IMAGES
-  if (req.files?.newImages) {
-    for (const img of req.files.newImages) {
-      const result = await uploadBuffer(
-        img.buffer,
-        `products/${product.title.trim()}/images`,
-      );
-      images.push(result.secure_url);
-    }
-  }
-
-  // HANDLE REMOVED IMAGES
-  let removedImages = updates.removedImages || [];
-
-  if (typeof removedImages === "string") {
-    // If single value OR comma-separated string
-    removedImages = removedImages.split(",");
-  }
-
-  if (!Array.isArray(removedImages)) {
-    removedImages = [removedImages];
-  }
-
-  if (removedImages.length > 0) {
-    images = images.filter((url) => !removedImages.includes(url));
-  }
-  delete updates.removedImages;
-
-  // UPDATE MEDIA
+  // handle images update
+  const { images, thumbnail } = await handleNewProductImages(
+    req,
+    product,
+    updates,
+  );
   product.media.thumbnail = thumbnail;
   product.media.images = images;
 
-  // UPDATE DISCOUNT
-  if (!product.discount) product.discount = {};
+  delete updates.removedImages;
 
+  // handle discount update
+  if (!product.discount) product.discount = {};
   if (updates.value !== undefined) {
     product.discount.value = Number(updates.value);
   }
@@ -130,15 +106,15 @@ exports.handleUpdateProduct = async (req, res) => {
   delete updates.value;
   delete updates.type;
 
-  // UPDATE NORMAL FIELDS
+  // parse numeric fields and apply other updates to product
   const parsedFields = parseNumbers(updates);
   delete parsedFields.media;
   delete parsedFields.discount;
 
   Object.assign(product, parsedFields);
-
   await product.save();
 
+  // Respond with updated product
   res.status(200).json({
     status: 1,
     msg: "Product updated successfully",
@@ -165,52 +141,25 @@ exports.handleGetProductDataById = async (req, res) => {
 };
 
 exports.handleCreateProduct = async (req, res) => {
-  const imagesUrls = [];
-  let thumbnailUrl = "";
-
-  // Upload thumbnail
-  if (req.files?.thumbnail) {
-    const result = await uploadBuffer(
-      req.files.thumbnail[0].buffer,
-      `products/${req.body.title.trim()}/thumbnails`,
-    );
-    thumbnailUrl = result.secure_url;
-  }
-
-  // Upload images
-  if (req.files?.images) {
-    for (const img of req.files.images) {
-      const result = await uploadBuffer(
-        img.buffer,
-        `products/${req.body.title.trim()}/images`,
-      );
-      imagesUrls.push(result.secure_url);
-    }
-  }
-
   // Convert numeric formData values
   let productDetails = parseNumbers(req.body);
 
-  // Extract discount correctly
+  //handle discount details
   const discount = {
     value: Number(productDetails.value) || 0,
     type: productDetails.type || "no-offers",
   };
-
-  // Remove discount fields from req.body
   delete productDetails.value;
   delete productDetails.type;
 
-  const media = {
-    thumbnail: thumbnailUrl,
-    images: imagesUrls,
-  };
+  //handle images upload
+  const { images, thumbnail } = await handleUpdatedProductImages(req);
+  const media = { thumbnail, images };
 
   const rating = {
     average: 0,
     count: 0,
   };
-
   // Final product object
   const finalProduct = {
     ...productDetails,
@@ -220,7 +169,7 @@ exports.handleCreateProduct = async (req, res) => {
   };
 
   const created = await Product.create(finalProduct);
-
+  // Respond with created product
   res.status(201).json({
     status: 1,
     msg: "Product Created Successfully",

@@ -7,11 +7,12 @@ const {
 } = require("../controllers/inbox.controller");
 const asyncHandler = require("../utils/asyncHandler");
 const router = express.Router();
+const { verifyAdmin } = require("../middlewares/authorization.middleware");
 
 router
   .route("/:id")
   .get(authMiddleware, asyncHandler(handleGetMessageDataById))
-  .delete(asyncHandler(authMiddleware, handleDeleteMessageById));
+  .delete(authMiddleware, verifyAdmin, handleDeleteMessageById);
 
 router.route("/").post(authMiddleware, handleCreateMessage);
 

@@ -13,19 +13,34 @@ const {
   handleGetProductDataById,
 } = require("../controllers/product.controller");
 const asyncHandler = require("../utils/asyncHandler");
+const { authMiddleware } = require("../middlewares/authentication.middleware");
+const { verifyAdmin } = require("../middlewares/authorization.middleware");
 
 const router = express.Router();
 
+// Product routes without :id param to get, create and toggle featured status
 router
   .route("/")
   .get(asyncHandler(handleGetProducts))
-  .patch(asyncHandler(handleToggleFeatured))
-  .post(handleNewImages, asyncHandler(handleCreateProduct));
+  .patch(authMiddleware, verifyAdmin, asyncHandler(handleToggleFeatured))
+  .post(
+    authMiddleware,
+    verifyAdmin,
+    handleNewImages,
+    asyncHandler(handleCreateProduct),
+  );
 
+// Product routes with :id param to get and update product by id
 router
   .route("/:id")
   .get(asyncHandler(handleGetProductDataById))
-  .patch(handleUpdatedImages, asyncHandler(handleUpdateProduct));
+  .patch(
+    authMiddleware,
+    verifyAdmin,
+    handleUpdatedImages,
+    asyncHandler(handleUpdateProduct),
+  );
+
 router.get("/search", asyncHandler(handleProductSearch));
 
 module.exports = router;

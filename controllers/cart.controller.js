@@ -8,6 +8,7 @@ exports.handleGetCartData = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError("User Id is not valid", 400);
   }
+  // Fetching the user cart data
   const user = await User.findById(id).populate("cart.product").lean();
   if (!user) {
     throw new ApiError("User not found", 404);
@@ -27,6 +28,7 @@ exports.handleAddProductToCart = async (req, res) => {
     throw new ApiError("User Id is not valid", 400);
   }
 
+  // Trying to update the qty if product already exists in cart
   let user = await User.findOneAndUpdate(
     { _id: id, "cart.product": product },
     { $inc: { "cart.$.qty": qty || 1 } },
@@ -35,7 +37,7 @@ exports.handleAddProductToCart = async (req, res) => {
     .populate("cart.product")
     .lean();
 
-  //if user is null, it means the product wasn't in the cart
+  // If product does not exist in cart then add it to cart
   if (!user) {
     user = await User.findByIdAndUpdate(
       id,
@@ -69,6 +71,7 @@ exports.handleRemoveProductFromCart = async (req, res) => {
     throw new ApiError("Please Provide Correct Product and User Id.", 400);
   }
 
+  // Removing the product from cart
   const user = await User.findOneAndUpdate(
     { _id: id, "cart.product": productId },
     { $pull: { cart: { product: productId } } },
@@ -81,6 +84,7 @@ exports.handleRemoveProductFromCart = async (req, res) => {
     throw new ApiError("User does not exist!", 404);
   }
 
+  //send back the updated cart
   res.status(200).json({
     status: 1,
     msg: "Product removed from cart.",
@@ -95,6 +99,7 @@ exports.handleUpdateCartQty = async (req, res) => {
     throw new ApiError("User Id is not valid", 400);
   }
 
+  // If qty is zero or less then remove the product from cart
   if (!qty || qty <= 0) {
     const updatedCart = await User.updateOne(
       { _id: id },
@@ -112,6 +117,7 @@ exports.handleUpdateCartQty = async (req, res) => {
     });
   }
 
+  // Updating the qty of the product in cart
   const user = await User.findOneAndUpdate(
     { _id: id, "cart.product": product },
     { $set: { "cart.$.qty": qty } },
@@ -120,6 +126,7 @@ exports.handleUpdateCartQty = async (req, res) => {
     .populate("cart.product")
     .lean();
 
+  // send back the updated cart
   res.status(200).json({
     status: 1,
     msg: "Quantity updated.",
