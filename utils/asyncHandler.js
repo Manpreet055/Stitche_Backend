@@ -4,13 +4,16 @@ const asyncHandler = (fn) => {
       const results = await fn(req, res, next);
       return results;
     } catch (error) {
+      if (res.headersSent) {
+        return next(error);
+      }
       if (error?.errorResponse?.code === 11000) {
         return res.status(409).json({
           status: 0,
           msg: "Email or username already exist",
         });
       }
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         status: 0,
         msg: error.message,
       });
