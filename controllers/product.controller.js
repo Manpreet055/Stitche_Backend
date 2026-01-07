@@ -31,7 +31,7 @@ exports.handleGetProducts = async (req, res) => {
     isFeatured: true,
     price: { $lt: price ?? 1500 },
   })
-    .sort(sortField ? { [sortField]: order } : { _id: 1 })
+    .sort(sortField ? { [sortField]: order } : { _id: 1, createdAt: -1 })
     .skip(skip)
     .limit(limit)
     .lean();

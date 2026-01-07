@@ -15,11 +15,12 @@ exports.handleGetOrderDataById = async (req, res) => {
 
   const userRecord = await User.findById(userId, "orders").lean();
 
-  // authorization check
-  if (
-    !userRecord?.orders?.includes(new mongoose.Types.ObjectId(id)) &&
-    role !== "admin"
-  ) {
+  //Convert ObjectIds to strings for comparison
+  const orderIdString = id.toString();
+  const userOrderIds =
+    userRecord?.orders?.map((orderId) => orderId.toString()) || [];
+
+  if (!userOrderIds.includes(orderIdString) && role !== "admin") {
     throw new ApiError("You are not authorized to access this order", 403);
   }
 
@@ -31,13 +32,13 @@ exports.handleGetOrderDataById = async (req, res) => {
   if (!orders) {
     throw new ApiError("Order not found", 404);
   }
+
   res.status(200).json({
     status: 1,
     msg: "Data fetching Successful",
-    orders,
+    orders, // This is a single order object, not an array
   });
 };
-
 exports.handleDeleteOrderById = async (req, res) => {
   const { id } = req.params; //orderId
   if (!mongoose.Types.ObjectId.isValid(id)) {
