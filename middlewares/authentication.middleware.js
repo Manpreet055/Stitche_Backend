@@ -42,29 +42,33 @@ exports.generateRefreshToken = (payload) => {
 
 exports.getNewAccessToken = async (req, res) => {
   const refreshToken = req.cookies?.refreshToken;
+
   if (!refreshToken) {
     return res.status(401).json({ msg: "Refresh token missing" });
   }
-  let user;
+
   try {
-    user = await User.findOne({ refreshToken });
+    // 1) Verify token signature/expiry first
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
 
+    // 2) Find user who has this refresh token in their array
+    const user = await User.findOne({ refreshToken });
+
+    // 3) CHECK if user exists BEFORE accessing user.refreshToken
+    if (!user) {
+      return res.status(403).json({ msg: "Refresh token is invalid." });
+    }
+
+    // 4) Extra check: ensure token is still in the array (token rotation safety)
     if (!user.refreshToken.includes(refreshToken)) {
-      return res.status(403).json({
-        msg: "Refresh token is used or invalid.",
-      });
+      return res.status(403).json({ msg: "Refresh token is used or invalid." });
     }
-    const accessToken = generateAccessToken(decoded.payload);
-    res.status(200).json({ token: accessToken });
+
+    // 5) Generate new access token
+    const accessToken = exports.generateAccessToken(decoded.payload);
+    return res.status(200).json({ token: accessToken });
   } catch (err) {
-    if (user) {
-      user.refreshToken = user.refreshToken.filter(
-        (token) => token !== refreshToken,
-      );
-      await user.save();
-    }
-    res.status(403).json({ msg: "Invalid or expired refresh token" });
-    throw err;
+    // jwt.verify throws if token is expired/invalid
+    return res.status(403).json({ msg: "Invalid or expired refresh token" });
   }
 };

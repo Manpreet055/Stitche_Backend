@@ -32,17 +32,30 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5174",
-      "http://172.16.17.149:5173",
-      "http://localhost:5173",
-      process.env.CORS_ORIGIN,
-    ],
+    origin: function (origin, callback) {
+      const allowedOrigins =
+        process.env.NODE_ENV === "production"
+          ? [process.env.CORS_ORIGIN] // must be set in Vercel
+          : [
+              "http://localhost:5173",
+              "http://localhost:5174",
+              "http://172.16.17.149: 5173",
+            ];
+
+      // Allow requests with no origin (like mobile apps, Postman, curl)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );
+
 // Routes prefixes
 app.use("/api", rateLimiter, coreRoute);
 app.use("/products", rateLimiter, productRoute);

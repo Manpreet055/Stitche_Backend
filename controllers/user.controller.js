@@ -70,8 +70,8 @@ exports.handleSignup = async (req, res) => {
   await user.save(); // saving the refresh token
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: process.env.NODE_ENV === "production" ? true : false,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 15 * 24 * 60 * 60 * 1000,
   });
 
@@ -125,8 +125,8 @@ exports.handleLogin = async (req, res) => {
   // Setting the cookies
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: process.env.NODE_ENV === "production" ? true : false,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 15 * 24 * 60 * 60 * 1000,
   });
 
@@ -158,8 +158,8 @@ exports.handleLogoutUser = async (req, res) => {
 
   res.clearCookie("refreshToken", {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: process.env.NODE_ENV === "production" ? true : false,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   });
   return res.sendStatus(204);
 };
