@@ -17,7 +17,7 @@ exports.handleGetOrderDataById = async (req, res) => {
 
   // authorization check
   if (
-    !userRecord?.orders?.includes(mongoose.Types.ObjectId(id)) &&
+    !userRecord?.orders?.includes(new mongoose.Types.ObjectId(id)) &&
     role !== "admin"
   ) {
     throw new ApiError("You are not authorized to access this order", 403);
@@ -61,7 +61,7 @@ exports.handleDeleteOrderById = async (req, res) => {
       {
         $pull: { orders: id },
       },
-      { session },
+      { session }
     ).lean();
 
     // deleting the order id from orders collection
@@ -108,7 +108,7 @@ exports.handlePlaceOrder = async (req, res) => {
         $push: { orders: newOrder[0]._id },
         $set: { cart: [] },
       },
-      { session, new: true },
+      { session, new: true }
     ).lean();
 
     await session.commitTransaction(); // saving changes
@@ -153,6 +153,7 @@ exports.handleGetOrderHistory = async (req, res) => {
       options: {
         skip: skip,
         limit: limit,
+        sort: { createdAt: -1 },
       },
     })
     .lean();
