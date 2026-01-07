@@ -61,7 +61,7 @@ exports.handleDeleteOrderById = async (req, res) => {
       {
         $pull: { orders: id },
       },
-      { session }
+      { session },
     ).lean();
 
     // deleting the order id from orders collection
@@ -108,7 +108,7 @@ exports.handlePlaceOrder = async (req, res) => {
         $push: { orders: newOrder[0]._id },
         $set: { cart: [] },
       },
-      { session, new: true }
+      { session, new: true },
     ).lean();
 
     await session.commitTransaction(); // saving changes

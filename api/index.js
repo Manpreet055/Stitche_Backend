@@ -9,6 +9,7 @@ const express = require("express");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const rateLimiter = require("../middlewares/rateLimiter.middleware");
+const errorHandler = require("../middlewares/errorHandler.middleware");
 
 // All routes
 const coreRoute = require("../routes/core.route");
@@ -66,6 +67,8 @@ app.use("/orders", rateLimiter, orderRoute);
 app.use("/health", (req, res) => {
   res.status(200).json({ status: "OK" });
 });
+
+app.use(errorHandler); // global error handler
 
 // Starting the server
 if (process.env.NODE_ENV !== "production") {

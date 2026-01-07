@@ -1,22 +1,9 @@
 const asyncHandler = (fn) => {
-  return async function (req, res, next = () => {}) {
+  return async function (req, res, next) {
     try {
-      const results = await fn(req, res, next);
-      return results;
+      await fn(req, res, next);
     } catch (error) {
-      if (res.headersSent) {
-        return next(error);
-      }
-      if (error?.errorResponse?.code === 11000) {
-        return res.status(409).json({
-          status: 0,
-          msg: "Email or username already exist",
-        });
-      }
-      return res.status(error.statusCode || 500).json({
-        status: 0,
-        msg: error.message,
-      });
+      next(error); // Pass error to the next middleware
     }
   };
 };
