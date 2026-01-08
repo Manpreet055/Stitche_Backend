@@ -1,4 +1,4 @@
-const { uploadBuffer } = require("../utils/uploadBuffer");
+const { IMAGE_PRESETS, uploadWithPreset } = require("../utils/uploadBuffer");
 
 exports.handleNewProductImages = async (req, product = {}, updates = {}) => {
   let images = [...product.media.images];
@@ -6,9 +6,10 @@ exports.handleNewProductImages = async (req, product = {}, updates = {}) => {
 
   // HANDLE NEW THUMBNAIL
   if (req.files?.newThumbnail) {
-    const result = await uploadBuffer(
+    const result = await uploadWithPreset(
       req.files.newThumbnail[0].buffer,
       `products/${product.title.trim()}/thumbnails`,
+      "productThumb",
     );
     thumbnail = result.secure_url;
   }
@@ -17,9 +18,10 @@ exports.handleNewProductImages = async (req, product = {}, updates = {}) => {
   if (req.files?.newImages) {
     for (const img of req.files.newImages) {
       //buffer upload for each image
-      const result = await uploadBuffer(
+      const result = await uploadWithPreset(
         img.buffer,
         `products/${product.title.trim()}/images`,
+        "productMain",
       );
       images.push(result.secure_url);
     }
@@ -50,9 +52,10 @@ exports.handleUpdatedProductImages = async (req) => {
 
   // Upload thumbnail
   if (req.files?.thumbnail) {
-    const result = await uploadBuffer(
+    const result = await uploadWithPreset(
       req.files.thumbnail[0].buffer,
       `products/${req.body.title.trim()}/thumbnails`,
+      "productThumb",
     );
     thumbnail = result.secure_url;
   }
@@ -60,9 +63,10 @@ exports.handleUpdatedProductImages = async (req) => {
   // Upload images
   if (req.files?.images) {
     for (const img of req.files.images) {
-      const result = await uploadBuffer(
+      const result = await uploadWithPreset(
         img.buffer,
         `products/${req.body.title.trim()}/images`,
+        "productMain",
       );
       images.push(result.secure_url);
     }

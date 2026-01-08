@@ -1,6 +1,6 @@
 const User = require("../models/user.model");
 const bcrypt = require("bcrypt");
-const uploadBuffer = require("../utils/uploadBuffer");
+const { uploadWithPreset } = require("../utils/uploadBuffer");
 const {
   generateAccessToken,
   generateRefreshToken,
@@ -20,7 +20,7 @@ exports.handleGetUserById = async (req, res) => {
   }
 
   // Fetching user without sensitive info
-  const user = await User.findById(id, -"password -refreshToken")
+  const user = await User.findById(id, "-password -refreshToken")
     .populate("cart.product")
     .lean();
 
@@ -209,9 +209,10 @@ exports.updateUserProfile = async (req, res) => {
   const avatar = req.file;
   if (avatar) {
     // converting buffer into streams
-    const uploadedPic = await uploadBuffer(
+    const uploadedPic = await uploadWithPreset(
       avatar.buffer, // incoming file buffer provided by multer
       `/users/profile-pics`, // Cloudinary folder name
+      "profile", // Preset name for profile pictures
     );
     user.profile.avatar = uploadedPic.secure_url;
   }
