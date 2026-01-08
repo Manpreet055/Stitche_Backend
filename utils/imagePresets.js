@@ -1,7 +1,7 @@
 exports.IMAGE_PRESETS = {
   // Profile/Avatar images
   profile: {
-    cropMode: "fill",
+    cropMode: "thumb", // Better for profile photos
     width: 400,
     height: 400,
     gravity: "face", // Focus on faces
@@ -9,7 +9,7 @@ exports.IMAGE_PRESETS = {
 
   // Product main images
   productMain: {
-    cropMode: "fit", // Maintain aspect ratio
+    cropMode: "fit", // Maintain aspect ratio - no zoom
     width: 1200,
     height: 1200,
     gravity: "center",
@@ -17,7 +17,7 @@ exports.IMAGE_PRESETS = {
 
   // Product thumbnails
   productThumb: {
-    cropMode: "fill",
+    cropMode: "fit", // Changed from "fill" to avoid zooming
     width: 300,
     height: 300,
     gravity: "center",
