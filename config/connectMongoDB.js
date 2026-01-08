@@ -14,6 +14,8 @@ async function connectMongoDB() {
     cached.promise = mongoose
       .connect(process.env.MONGO_URI, {
         bufferCommands: false,
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 6000,
       })
       .then((mongoose) => {
         console.log("=> New MongoDB Connection Established");
