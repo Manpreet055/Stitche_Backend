@@ -30,6 +30,8 @@ router
     asyncHandler(handleCreateProduct),
   );
 
+router.get("/search", asyncHandler(handleProductSearch));
+
 // Product routes with :id param to get and update product by id
 router
   .route("/:id")
@@ -40,7 +42,5 @@ router
     handleUpdatedImages,
     asyncHandler(handleUpdateProduct),
   );
-
-router.get("/search", asyncHandler(handleProductSearch));
 
 module.exports = router;
