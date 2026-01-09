@@ -7,6 +7,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 const express = require("express");
 const helmet = require("helmet");
+const { handleFileError } = require("../middlewares/multer.middleware");
 const cookieParser = require("cookie-parser");
 const rateLimiter = require("../middlewares/rateLimiter.middleware");
 const errorHandler = require("../middlewares/errorHandler.middleware");
@@ -28,7 +29,7 @@ app.use(async (req, res, next) => {
     next(e);
   }
 });
-app.set("trust proxy", 1);
+app.set("trust proxy", true); // trust first proxy
 
 // Initializing Middlewares
 app.use(
@@ -37,7 +38,8 @@ app.use(
     skip: (req) => req.method === "OPTIONS",
   }),
 );
-app.use(express.json());
+app.use(express.json({ limit: "10mb" })); // to handle JSON payloads
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 app.use(helmet());
 
@@ -76,6 +78,7 @@ app.use("/health", (req, res) => {
 });
 
 app.use(errorHandler); // global error handler
+app.use(handleFileError); // multer file upload error handler
 
 // Starting the server
 if (process.env.NODE_ENV !== "production") {

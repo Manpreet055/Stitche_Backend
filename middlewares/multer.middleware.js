@@ -2,7 +2,10 @@ const multer = require("multer");
 
 const storage = multer.memoryStorage();
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024, files: 10 },
+}); // 5MB limit
 
 // Handle new images
 exports.handleNewImages = upload.fields([
@@ -16,4 +19,19 @@ exports.handleUpdatedImages = upload.fields([
   { name: "newImages", maxCount: 10 },
 ]);
 
+exports.handleFileError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({
+        error: "File too large. Maximum size is 5MB",
+      });
+    }
+    if (err.code === "LIMIT_FILE_COUNT") {
+      return res.status(400).json({
+        error: "Too many files. Maximum is 10 files",
+      });
+    }
+  }
+  next(err);
+};
 exports.handleProfileImage = upload.single("avatar");
