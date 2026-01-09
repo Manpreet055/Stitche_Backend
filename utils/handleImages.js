@@ -1,28 +1,39 @@
-const { IMAGE_PRESETS, uploadWithPreset } = require("../utils/uploadBuffer");
+const { uploadWithPreset } = require("../utils/uploadBuffer");
+const cloudinary = require("../config/cloudinary.config");
 
-exports.handleNewProductImages = async (req, product = {}, updates = {}) => {
-  let images = [...product.media.images];
-  let thumbnail = product.media.thumbnail;
+exports.handleUpdatedProductImages = async (
+  req,
+  product = {},
+  updates = {},
+) => {
+  let images = [...(product.media?.images || [])];
+  let imagesIds = [...(product.media?.imagesIds || [])];
+  let thumbnail = product.media?.thumbnail || "";
+  let thumbnailId = product.media?.thumbnailId || null;
 
   // HANDLE NEW THUMBNAIL
   if (req.files?.newThumbnail) {
+    if (thumbnailId) {
+      await cloudinary.uploader.destroy(thumbnailId);
+    }
     const result = await uploadWithPreset(
       req.files.newThumbnail[0].buffer,
       `products/${product.title.trim()}/thumbnails`,
       "productThumb",
     );
+    thumbnailId = result.public_id;
     thumbnail = result.secure_url;
   }
 
   // HANDLE NEW IMAGES
   if (req.files?.newImages) {
     for (const img of req.files.newImages) {
-      //buffer upload for each image
       const result = await uploadWithPreset(
         img.buffer,
         `products/${product.title.trim()}/images`,
         "productMain",
       );
+      imagesIds.push(result.public_id);
       images.push(result.secure_url);
     }
   }
@@ -31,24 +42,34 @@ exports.handleNewProductImages = async (req, product = {}, updates = {}) => {
   let removedImages = updates.removedImages || [];
 
   if (typeof removedImages === "string") {
-    // If single value OR comma-separated string
-    removedImages = removedImages.split(",");
+    removedImages = JSON.parse(removedImages);
   }
 
-  if (!Array.isArray(removedImages)) {
-    removedImages = [removedImages];
+  for (const url of removedImages) {
+    const index = images.indexOf(url);
+    if (index > -1) {
+      const publicId = imagesIds[index];
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
+        imagesIds.splice(index, 1);
+      }
+      images.splice(index, 1);
+    }
   }
 
-  if (removedImages.length > 0) {
-    images = images.filter((url) => !removedImages.includes(url));
-  }
-
-  return { images, thumbnail };
+  return {
+    images,
+    thumbnail,
+    thumbnailId,
+    imagesIds,
+  };
 };
 
-exports.handleUpdatedProductImages = async (req) => {
+exports.handleNewProductImages = async (req) => {
   const images = [];
+  const imagesIds = [];
   let thumbnail = "";
+  let thumbnailId = null;
 
   // Upload thumbnail
   if (req.files?.thumbnail) {
@@ -58,6 +79,7 @@ exports.handleUpdatedProductImages = async (req) => {
       "productThumb",
     );
     thumbnail = result.secure_url;
+    thumbnailId = result.public_id;
   }
 
   // Upload images
@@ -69,8 +91,9 @@ exports.handleUpdatedProductImages = async (req) => {
         "productMain",
       );
       images.push(result.secure_url);
+      imagesIds.push(result.public_id);
     }
   }
 
-  return { images, thumbnail };
+  return { images, thumbnail, imagesIds, thumbnailId };
 };

@@ -5,6 +5,7 @@ const {
   generateAccessToken,
   generateRefreshToken,
 } = require("../middlewares/authentication.middleware");
+const cloudinary = require("../config/cloudinary");
 const mongoose = require("mongoose");
 const ApiError = require("../utils/ApiError");
 
@@ -208,13 +209,21 @@ exports.updateUserProfile = async (req, res) => {
 
   const avatar = req.file;
   if (avatar) {
+    if (user.profile?.avatarId) {
+      // Delete the previous avatar from Cloudinary
+      await cloudinary.uploader.destroy(user.profile.avatarId);
+    }
+
+    let buffer = avatar.buffer;
     // converting buffer into streams
     const uploadedPic = await uploadWithPreset(
-      avatar.buffer, // incoming file buffer provided by multer
+      buffer, // incoming file buffer provided by multer
       `/users/profile-pics`, // Cloudinary folder name
       "profile", // Preset name for profile pictures
     );
+    buffer = null;
     user.profile.avatar = uploadedPic.secure_url;
+    user.profile.avatarId = uploadedPic.public_id;
   }
 
   //whitelisting fields that can be updated

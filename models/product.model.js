@@ -38,6 +38,14 @@ const mediaSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    imagesIds: {
+      type: [String],
+      default: [],
+    },
+    thumbnailId: {
+      type: String,
+      default: "",
+    },
   },
   { _id: false },
 );

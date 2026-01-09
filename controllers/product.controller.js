@@ -85,14 +85,12 @@ exports.handleUpdateProduct = async (req, res) => {
   }
 
   // handle images update
-  const { images, thumbnail } = await handleNewProductImages(
-    req,
-    product,
-    updates,
-  );
-  product.media.thumbnail = thumbnail;
-  product.media.images = images;
+  const { images, thumbnail, thumbnailId, imagesIds } =
+    await handleUpdatedProductImages(req, product, updates);
+  const media = { thumbnail, images, thumbnailId, imagesIds };
+  product.media = media;
 
+  delete updates.media;
   delete updates.removedImages;
 
   // handle discount update
@@ -153,8 +151,9 @@ exports.handleCreateProduct = async (req, res) => {
   delete productDetails.type;
 
   //handle images upload
-  const { images, thumbnail } = await handleUpdatedProductImages(req);
-  const media = { thumbnail, images };
+  const { images, thumbnail, imagesIds, thumbnailId } =
+    await handleNewProductImages(req);
+  const media = { thumbnail, images, imagesIds, thumbnailId };
 
   const rating = {
     average: 0,

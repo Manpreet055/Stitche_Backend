@@ -34,6 +34,9 @@ const profileSchema = new mongoose.Schema(
     avatar: {
       type: String,
     },
+    avatarId: {
+      type: String,
+    },
     address: {
       type: addressSchema,
     },

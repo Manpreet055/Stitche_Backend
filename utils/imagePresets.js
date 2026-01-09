@@ -2,9 +2,9 @@ exports.IMAGE_PRESETS = {
   // Profile/Avatar images
   profile: {
     cropMode: "thumb", // Better for profile photos
-    width: 400,
-    height: 400,
-    gravity: "face", // Focus on faces
+    width: 600,
+    height: 600,
+    gravity: "center", // Focus on faces
   },
 
   // Product main images
