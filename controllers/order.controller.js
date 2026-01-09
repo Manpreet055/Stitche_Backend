@@ -78,7 +78,7 @@ exports.handleDeleteOrderById = async (req, res) => {
     session.abortTransaction();
     res.status(error.statusCode || 500).json({
       status: 0,
-      msg: "Transaction failed: " + error.message,
+      msg: "Something went wrong",
     });
   } finally {
     session.endSession();
@@ -124,7 +124,7 @@ exports.handlePlaceOrder = async (req, res) => {
     await session.abortTransaction();
     res.status(500).json({
       status: 0,
-      msg: "Transaction failed: " + error.message,
+      msg: "Something went wrong",
     });
   } finally {
     //  close the session

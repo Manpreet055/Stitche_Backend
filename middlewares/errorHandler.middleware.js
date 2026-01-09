@@ -1,24 +1,20 @@
 const errorHandler = (err, req, res, next) => {
-  // Default to 500 if no status code is set
   const statusCode = err.statusCode || err.status || 500;
+  const isProd = process.env.NODE_ENV === "production";
 
-  // Log error details in development
-  if (process.env.NODE_ENV !== "production") {
-    console.error("Error Stack:", err.stack);
-    console.error("Error Details:", err);
-  }
+  // Always log errors on server
+  console.error(err);
 
   // Mongoose validation error
   if (err.name === "ValidationError") {
-    const errors = Object.values(err.errors).map((e) => e.message);
     return res.status(400).json({
       status: 0,
       msg: "Validation Error",
-      errors,
+      errors: Object.values(err.errors).map((e) => e.message),
     });
   }
 
-  // Mongoose duplicate key error
+  // Duplicate key error
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
     return res.status(409).json({
@@ -27,11 +23,11 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // Mongoose CastError (invalid ObjectId)
+  // Invalid ObjectId
   if (err.name === "CastError") {
     return res.status(400).json({
       status: 0,
-      msg: `Invalid ${err.path}: ${err.value}`,
+      msg: "Invalid ID format",
     });
   }
 
@@ -50,11 +46,11 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // Generic error response
+  // Generic error (SAFE)
   res.status(statusCode).json({
     status: 0,
-    msg: err.message || "Internal Server Error",
-    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
+    msg: isProd ? "Something went wrong" : err.message,
+    ...(isProd ? {} : { stack: err.stack }),
   });
 };
 

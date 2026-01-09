@@ -18,7 +18,7 @@ async function connectMongoDB() {
         serverSelectionTimeoutMS: 6000,
       })
       .then((mongoose) => {
-        console.log("=> New MongoDB Connection Established");
+        console.log("New MongoDB Connection Established");
         return mongoose;
       });
   }

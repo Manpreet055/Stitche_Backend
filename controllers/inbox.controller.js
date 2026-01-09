@@ -80,7 +80,7 @@ exports.handleDeleteMessageById = async (req, res) => {
     }
     res.status(error.statusCode || 500).json({
       status: 0,
-      msg: "Transaction failed: " + error.message,
+      msg: "Something went wrong",
     });
   } finally {
     await session.endSession(); // end session
@@ -128,7 +128,7 @@ exports.handleCreateMessage = async (req, res) => {
     }
     res.status(error.statusCode || 500).json({
       status: 0,
-      msg: error.message,
+      msg: "Something went wrong",
     });
   } finally {
     await session.endSession(); // end session
