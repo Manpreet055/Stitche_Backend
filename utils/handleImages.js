@@ -1,5 +1,5 @@
 const { uploadWithPreset } = require("../utils/uploadBuffer");
-const cloudinary = require("../config/cloudinary.config");
+const { cloudinary } = require("../config/cloudinary");
 
 exports.handleUpdatedProductImages = async (
   req,
