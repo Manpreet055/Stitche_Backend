@@ -156,8 +156,8 @@ exports.handleCreateProduct = async (req, res) => {
   const media = { thumbnail, images, imagesIds, thumbnailId };
 
   const rating = {
-    average: 0,
-    count: 0,
+    average: Math.random() * (5 - 3) + 3, // random average between 3 and 5
+    count: Math.floor(Math.random() * (500 - 50) + 50), // random count between 50 and 500
   };
   // Final product object
   const finalProduct = {

@@ -49,7 +49,6 @@ exports.handleSignup = async (req, res) => {
     role: "user", // default role so that no one can signup as admin
     profile: {
       fullName: req.body?.fullname,
-      phone: Math.floor(1000000000 + Math.random() * 9000000000), // random number
     },
   };
   delete formData?.fullname;

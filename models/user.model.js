@@ -30,6 +30,8 @@ const profileSchema = new mongoose.Schema(
     },
     phone: {
       type: Number,
+      unique: true,
+      sparse: true,
     },
     avatar: {
       type: String,
