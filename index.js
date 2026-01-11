@@ -36,7 +36,7 @@ app.use(
   morgan("dev", {
     //this is the middleware used to check the incoming logs
     skip: (req) => req.method === "OPTIONS",
-  }),
+  })
 );
 app.use(express.json({ limit: "10mb" })); // to handle JSON payloads
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -63,7 +63,7 @@ app.use(
       }
     },
     credentials: true,
-  }),
+  })
 );
 
 // Routes prefixes
