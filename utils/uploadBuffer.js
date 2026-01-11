@@ -45,4 +45,17 @@ const uploadWithPreset = (buffer, folder, presetName) => {
   return uploadBuffer(buffer, folder, preset);
 };
 
-module.exports = { uploadBuffer, uploadWithPreset, IMAGE_PRESETS };
+const extractPublicId = (url) => {
+  if (!url || typeof url !== "string") return null;
+
+  const clean = url.split("?")[0]; // strip any query params
+  const matches = clean.match(/\/upload\/(?:[^/]+\/)*?(?:v\d+\/)?(.+)\.[^.]+$/);
+
+  return matches ? decodeURIComponent(matches[1]) : null;
+};
+module.exports = {
+  uploadBuffer,
+  uploadWithPreset,
+  IMAGE_PRESETS,
+  extractPublicId,
+};

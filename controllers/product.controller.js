@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 const {
   handleNewProductImages,
   handleUpdatedProductImages,
-} = require("../utils/handleImages");
+} = require("../utils/handleImageUpload");
 
 exports.handleGetProducts = async (req, res) => {
   let { limit, page, sortingOrder, sortField, price, ...filters } = req.query;
@@ -31,7 +31,7 @@ exports.handleGetProducts = async (req, res) => {
     isFeatured: true,
     price: { $lt: price ?? 1500 },
   })
-    .sort(sortField ? { [sortField]: order } : { _id: 1, createdAt: -1 })
+    .sort(sortField ? { [sortField]: order } : { createdAt: -1, updatedAt: -1 })
     .skip(skip)
     .limit(limit)
     .lean();
@@ -156,8 +156,8 @@ exports.handleCreateProduct = async (req, res) => {
   const media = { thumbnail, images, imagesIds, thumbnailId };
 
   const rating = {
-    average: Math.random() * (5 - 3) + 3, // random average between 3 and 5
-    count: Math.floor(Math.random() * (500 - 50) + 50), // random count between 50 and 500
+    average: Number((Math.random() * (5 - 3) + 3).toFixed(1)), // random average between 3 and 5
+    count: Number(Math.floor(Math.random() * (500 - 50) + 50).toFixed(0)), // random count between 50 and 500
   };
   // Final product object
   const finalProduct = {
@@ -191,6 +191,11 @@ exports.handleProductSearch = async (req, res) => {
           path: ["name", "title", "category", "brand", "subCategory"],
           fuzzy: { maxEdits: 2 },
         },
+      },
+    },
+    {
+      $match: {
+        isFeatured: true, // Add this stage to filter featured products
       },
     },
     { $limit: Number(limit) || 10 },
