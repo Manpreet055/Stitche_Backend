@@ -63,7 +63,7 @@ app.use(
       }
     },
     credentials: true,
-    maxAge: 86400, // 24 hours
+    maxAge: 86400, // 24 hours prefl
   }),
 );
 
