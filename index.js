@@ -52,7 +52,7 @@ app.use(
           : [
               "http://localhost:5173",
               "http://localhost:5174",
-              "http://172.16.17.149:5174",
+              "http://172.16.17.149:5173",
             ];
 
       // Allow requests with no origin (like mobile apps, Postman, curl)
@@ -63,6 +63,7 @@ app.use(
       }
     },
     credentials: true,
+    maxAge: 86400, // 24 hours
   }),
 );
 

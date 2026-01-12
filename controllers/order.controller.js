@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Order = require("../models/order.model");
 const User = require("../models/user.model");
 const ApiError = require("../utils/ApiError");
-
+const Product = require("../models/product.model");
 exports.handleGetOrderDataById = async (req, res) => {
   const { id: userId, role } = req.user.payload;
   if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -101,6 +101,27 @@ exports.handlePlaceOrder = async (req, res) => {
   try {
     session.startTransaction();
     orderData.user = id; //linking User id in order doc
+
+    // Validate product prices before placing order
+    const productIds = orderData.products.map((item) => item.product);
+    const products = await Product.find({ _id: { $in: productIds } })
+      .session(session)
+      .lean();
+
+    products.forEach((product) => {
+      const foundProduct = orderData.products.find(
+        (p) => p?.product.toString() === product?._id.toString(),
+      );
+
+      const expectedTotal = product.price * foundProduct.qty;
+      if (foundProduct.price !== expectedTotal) {
+        throw new ApiError(
+          `Price mismatch for product ${product._id}. Expected: ${expectedTotal}, Received: ${foundProduct.price}`,
+          400,
+        );
+      }
+    });
+
     const newOrder = await Order.create([orderData], { session }); // new order
 
     await User.findByIdAndUpdate(
